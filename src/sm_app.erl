@@ -18,4 +18,5 @@ stop(_) ->
   ok.
 
 init([]) ->
+  sm:start_http([]),
   {ok, {{one_for_one, 5, 10}, []}}.

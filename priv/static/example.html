@@ -1,16 +1,24 @@
 <html>
   <head>
     <title>Smoothie WebSocket Example</title>
-    <script type="text/javascript" src="/sm/bullet.js"></script>
+    <script type="text/javascript" src="/sm/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="/sm/erlb.js"></script>
     <script type="text/javascript" src="/sm/smoothie.js"></script>
     <script type="text/javascript">
-      var ws = Smoothie.connect({});
+      var ws = Smoothie.connect({
+        onMessage: function(msg) {
+          console.log("Got message:", msg.data);
+        }
+//        onBeforeSend: function(data) {
+//          return SmoothieBert.encode(data);
+//        }
+      });
     </script>
   </head>
   <body>
     <p>Open debug console and have fun!</p>
     <p>
-      <button onclick="ws.send('test')">Send test message</button>
+      <button onclick="ws.send('foo'); return false; ws.send(Erl.tuple('binary','SendMessage',123))">Send test message</button>
     </p>
   </body>
 </html>
