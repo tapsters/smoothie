@@ -13,6 +13,7 @@ In rebar.config:
 
 Starting http server:
 
+```Erlang
     sm:start_http([
       {ranch, [{port, 3000}]},
       {cowboy, [
@@ -25,6 +26,7 @@ Starting http server:
         {protocol, [{compress, true}]}
       ]}
     ])
+```
 
 More about configuring Ranch TCP transport and Cowboy protocol: 
 [ranch\_tcp](http://ninenines.eu/docs/en/ranch/HEAD/manual/ranch_tcp/), 
