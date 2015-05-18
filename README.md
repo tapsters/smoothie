@@ -6,7 +6,9 @@ Cute web framework for Erlang built on top of Cowboy and Bullet.
 
 In rebar.config:
 
-    {smoothie,  ".*", {git, "git://github.com/myua/smoothie", {tag, "master"} }}
+```Erlang
+{smoothie,  ".*", {git, "git://github.com/myua/smoothie", {tag, "master"} }}
+```
 
 ----
 ## Usage
