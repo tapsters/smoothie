@@ -14,18 +14,18 @@ In rebar.config:
 Starting http server:
 
 ```Erlang
-    sm:start_http([
-      {ranch, [{port, 3000}]},
-      {cowboy, [
-        {nb_acceptors, 100},
-        {rules, [
-          sm:route("/",         {priv_file, myapp, "static/index.html"}),
-          sm:route("/js/[...]", {priv_dir, "staric/js"}),
-          sm:route("/ws/[...]", {ws, my_handler})
-        ]},
-        {protocol, [{compress, true}]}
-      ]}
-    ])
+sm:start_http([
+  {ranch, [{port, 3000}]},
+  {cowboy, [
+    {nb_acceptors, 100},
+    {rules, [
+      sm:route("/",         {priv_file, myapp, "static/index.html"}),
+      sm:route("/js/[...]", {priv_dir, "staric/js"}),
+      sm:route("/ws/[...]", {ws, my_handler})
+    ]},
+    {protocol, [{compress, true}]}
+  ]}
+])
 ```
 
 More about configuring Ranch TCP transport and Cowboy protocol: 
