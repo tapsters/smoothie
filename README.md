@@ -6,25 +6,29 @@ Cute web framework for Erlang built on top of Cowboy and Bullet.
 
 In rebar.config:
 
-    {smoothie,  ".*", {git, "git://github.com/myua/smoothie", {tag, "master"} }}
+```Erlang
+{smoothie,  ".*", {git, "git://github.com/myua/smoothie", {tag, "master"} }}
+```
 
 ----
 ## Usage
 
 Starting http server:
 
-    sm:start_http([
-      {ranch, [{port, 3000}]},
-      {cowboy, [
-        {nb_acceptors, 100},
-        {rules, [
-          sm:route("/",         {priv_file, myapp, "static/index.html"}),
-          sm:route("/js/[...]", {priv_dir, "staric/js"}),
-          sm:route("/ws/[...]", {ws, my_handler})
-        ]},
-        {protocol, [{compress, true}]}
-      ]}
-    ])
+```Erlang
+sm:start_http([
+  {ranch, [{port, 3000}]},
+  {cowboy, [
+    {nb_acceptors, 100},
+    {rules, [
+      sm:route("/",         {priv_file, myapp, "static/index.html"}),
+      sm:route("/js/[...]", {priv_dir, "staric/js"}),
+      sm:route("/ws/[...]", {ws, my_handler})
+    ]},
+    {protocol, [{compress, true}]}
+  ]}
+])
+```
 
 More about configuring Ranch TCP transport and Cowboy protocol: 
 [ranch\_tcp](http://ninenines.eu/docs/en/ranch/HEAD/manual/ranch_tcp/), 
