@@ -1,0 +1,6 @@
+{application, smoothie, [{description, "Smoothie web framework"},
+                         {vsn, "1"},
+                         {registered, []},
+                         {applications, [kernel, stdlib, cowboy, bullet]},
+                         {mod, {sm_app, []}},
+                         {env, []} ]}.

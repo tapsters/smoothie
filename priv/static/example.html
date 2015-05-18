@@ -1,0 +1,16 @@
+<html>
+  <head>
+    <title>Smoothie WebSocket Example</title>
+    <script type="text/javascript" src="/sm/bullet.js"></script>
+    <script type="text/javascript" src="/sm/smoothie.js"></script>
+    <script type="text/javascript">
+      var ws = Smoothie.connect({});
+    </script>
+  </head>
+  <body>
+    <p>Open debug console and have fun!</p>
+    <p>
+      <button onclick="ws.send('test')">Send test message</button>
+    </p>
+  </body>
+</html>
