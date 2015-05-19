@@ -88,6 +88,8 @@ Smoothie implements following protocols:
 [BERT](http://bert-rpc.org) which is compatible with Erlang's 
 [ETF](http://erlang.org/doc/apps/erts/erl_ext_dist.html)
 
+If you want add your own protocol, you should implement sm_protocol behaviour.
+
 ----
 ## Client-side
 
