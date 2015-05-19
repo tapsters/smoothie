@@ -47,10 +47,9 @@ To handle WebSocket connections you should implement sm_websocket behaviour:
 ````Erlang
 -module(my_websocket).
 -behaviour(sm_websocket).
+-include_lib("kvs/include/user.hrl").
 
 -export([handle/2]).
-
--include_lib("kvs/include/user.hrl").
 
 -record(state, {
   user
@@ -63,6 +62,7 @@ handle(init, {_, WebSocketState}) ->
 
 handle({stream, <<"get_name">>}, {State=#state{user=User}, _}) ->
   {reply, User#user.username, State};
+
 handle({stream, Data}, {State, _}) -> 
   io:format("Got new data: ~p~n", [Data]),
   {ok, State};
