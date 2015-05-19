@@ -1,7 +1,7 @@
 -ifndef(SM_HRL).
 -define(SM_HRL, 1).
 
--record(sm_ws_state, {
+-record(sm_websocket_state, {
   req
 }).
 

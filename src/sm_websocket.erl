@@ -1,20 +1,15 @@
--module(sm_ws_handler).
+-module(sm_websocket).
 -author("Vitaly Shutko").
 -behaviour(cowboy_http_handler).
 -behaviour(cowboy_websocket_handler).
 
 -include("sm.hrl").
 
--export([init/3, handle/2, info/3]).
+-export([init/3, handle/2, info/3, terminate/3]).
 -export([websocket_init/3, websocket_handle/3, websocket_info/3, websocket_terminate/3]).
 
--record(state, {
-  handler,
-  handler_state
-}).
-
 -type handler_state() :: any().
--type websocket_state() :: #sm_ws_state{}.
+-type websocket_state() :: #sm_websocket_state{}.
 -type state() :: {handler_state(), websocket_state()}.
 -type data() :: any().
 -type message() :: init
@@ -24,6 +19,12 @@
 
 -callback handle(message(), state())
 	-> any().
+
+-record(state, {
+  handler,
+  protocol,
+  handler_state
+}).
 
 %% HTTP
 
@@ -45,18 +46,22 @@ init(_Transport, Req, _Opts) ->
 handle(Req, State) ->
   {ok, Req, State}.
 
-info(Message, Req, State) ->
+info(_Message, Req, State) ->
   {ok, Req, State}.
+
+terminate(_Reason, _Req, _State) ->
+  ok.
 
 %% WebSocket
 
 make_ws_state(Req) ->
-  #sm_ws_state{req=Req}.
+  #sm_websocket_state{req=Req}.
 
 websocket_init(_Transport, Req, Opts) ->
-  Handler = sm:prop(handler, Opts),
-  Timeout = sm:prop(timeout, Opts, 60000),
-  State = #state{handler=Handler},
+  Handler  = sm:prop(handler, Opts),
+  Timeout  = sm:prop(timeout, Opts, 60000),
+  Protocol = sm:prop(protocol, Opts),
+  State    = #state{handler=Handler, protocol=Protocol},
   
   case Handler:handle(init, {undefined, make_ws_state(Req)}) of
     ok ->
@@ -67,19 +72,29 @@ websocket_init(_Transport, Req, Opts) ->
       {shutdown, Req}
   end.
 
-websocket_handle({text, <<"ping">>}, Req, State) ->
+websocket_handle({text, <<"ping">>}, _Req, State) ->
   {reply, {text, <<"pong">>}, State, hibernate};
-websocket_handle(Data, Req, State=#state{handler=Handler, handler_state=HandlerState}) ->
-  io:format("FRAME: ~p~n", [Data]),
-  case Handler:handle({stream, Data}, {HandlerState, make_ws_state(Req)}) of
-    ok ->
-      {ok, Req, State, hibernate};
-    {ok, HandlerState2} ->
-      {ok, Req, State#state{handler_state=HandlerState2}, hibernate};
-    {reply, Reply, HandlerState2} ->
-      {reply, {text, Reply}, Req, State#state{handler_state=HandlerState2}, hibernate};
-    {shutdown, HandlerState2} ->
-      {shutdown, Req, State#state{handler_state=HandlerState2}}
+websocket_handle({Format, Data}, Req, State=#state{handler=Handler, 
+                                                   handler_state=HandlerState, 
+                                                   protocol=Protocol}) ->
+  case Protocol:supports_format(Format) of
+    true ->
+      DataEncoded = Protocol:decode(Data, Format),
+      case Handler:handle({stream, DataEncoded}, {HandlerState, make_ws_state(Req)}) of
+        ok ->
+          {ok, Req, State, hibernate};
+        {ok, HandlerState2} ->
+          {ok, Req, State#state{handler_state=HandlerState2}, hibernate};
+        {reply, Reply, HandlerState2} ->
+          {ok, Encoded} = Protocol:encode(Reply, Format),
+          {reply, {Format, Encoded}, Req, 
+           State#state{handler_state=HandlerState2}, hibernate};
+        {shutdown, HandlerState2} ->
+          {shutdown, Req, State#state{handler_state=HandlerState2}}
+      end;
+    false ->
+      io:format("Protocol ~p doesn't support ~p format~n", [Protocol, Format]),
+      {ok, Req, State, hibernate}
   end.
 
 websocket_info(Info, Req, State=#state{handler=Handler, handler_state=HandlerState}) ->

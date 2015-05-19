@@ -1,5 +1,5 @@
 # Smoothie
-Cute web framework for Erlang built on top of Cowboy and Bullet.
+Cute web framework for Erlang built on top of Cowboy.
 
 ----
 ## Installing
@@ -23,7 +23,7 @@ sm:start_http([
     {rules, [
       sm:route("/",         {priv_file, myapp, "static/index.html"}),
       sm:route("/js/[...]", {priv_dir, "staric/js"}),
-      sm:route("/ws/[...]", {ws, my_handler})
+      sm:route("/ws/[...]", {websocket, myhandler, sm_protocol_bert})
     ]},
     {protocol, [{compress, true}]}
   ]}
