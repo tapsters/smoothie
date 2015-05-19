@@ -121,4 +121,5 @@ websocket_info(Info, Req, State=#state{handler=Handler, handler_state=HandlerSta
 end.
 
 websocket_terminate(_Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
-  Handler:handle(terminate, {HandlerState, make_ws_state(Req)}).
+  Handler:handle(terminate, {HandlerState, make_ws_state(Req)}),
+  ok.

@@ -1,6 +1,8 @@
 -module(sm).
 -author("Vitaly Shutko").
 
+-include("sm.hrl").
+
 %% Setting Up
 -export([start_http/1]).
 -export([route/2]).
@@ -57,13 +59,13 @@ to_binary(Value)                     -> Value.
 
 %% Request
 
-qs(Req) ->
+qs(#sm_websocket_state{req=Req}) ->
   {Qs, _} = cowboy_req:qs(Req), Qs.
 
-qs_val(Name, Req) ->
+qs_val(Name, #sm_websocket_state{req=Req}) ->
   {Value, _} = cowboy_req:qs_val(to_binary(Name), Req), Value.
 
-qs_vals(Req) ->
+qs_vals(#sm_websocket_state{req=Req}) ->
   {List, _} = cowboy_req:qs_vals(Req), List.
 
 %% Config

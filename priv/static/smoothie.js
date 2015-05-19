@@ -1,170 +1,133 @@
-var Smoothie = new (function() {
-  this.connect = function(options) {
-    return new SmoothieWebSocket(options);
-  }
-})();
-
-/**
- * Usage example:
- * 
- * new SmoothieWebSocket({
- *   http: {
- *       protocol:   "ws://",
- *       host:       "example.com",
- *       port:       3000,
- *       path:       "/ws",
- *   },
- *   heartBeatDelay: 20000,
- *   protocol:       "bert", //"relay"
- *
- *   onOpen:         function() {},
- *   onMessage:      function(data) {},
- *   onDisconnect:   function() {},
- *   onClose:        function() {},
- *
- *   onBeforeSend:   function(data) {}
- * }
- */
-function SmoothieWebSocket(options) {
-  this.options    = options;
-  this.connection = undefined;
-  
-  var that   = this;
-  var active = false;
-  var heartBeatTimeout;
-  
-  var getOption = function(name, defaultValue) {
-    return that.options[name] ? that.options[name] : defaultValue;
-  }
-  
-  var createWebSocket = function(url) {
-    if (window.WebSocket) {
-      return new window.WebSocket(url);
+var Smoothie = (function (erl) {
+    // protocols
+    var SmoothieProtocols = [];
+    SmoothieProtocols['bert'] = (function () {
+        return {
+            encode: function (data) { return erl.encode(data) },
+            decode: function (data) { return erl.decode(data) }
+        }
+    })();
+    SmoothieProtocols['relay'] = (function () {
+        return {
+            encode: function (data) { return data },
+            decode: function (data) { return data }
+        }
+    })();
+ 
+    //public methods
+    return {
+        connect: newWebSocketConnection
+    };
+ 
+    // create new ws connection
+    function newWebSocketConnection(options){
+        var webSocket = createWebSocket(getUrl(options));
+        if(webSocket){
+            // create new connection with handlers from options
+            return new WebSocketConnection(webSocket, options);
+        } else {
+            console.log("Unable to instantiate WebSocket");
+        }
     }
-    
-    if (window.MozWebSocket && navigator.userAgent.indexOf("Firefox/6.0") == -1) {
-      return new window.MozWebSocket(url);
+ 
+    function getUrl(options){
+        var http            = options["http"] || {};
+        var defaultProtocol = window.location.protocol == "https:" ? "wss://" : "ws://";
+        var protocol        = http["protocol"] || defaultProtocol;
+        var host            = http["host"] || location.hostname;
+        var port            = http["port"] || location.port;
+        var path            = http["path"] || "/ws";
+ 
+        return protocol + host + ":" + port + path;
     }
-    
-    return false;
-  }
-  
-  var init = function(options) {
-    var heartBeatDelay  = getOption("heartbeatDelay", 20000);
-    var http            = getOption("http", {});
-    var defaultProtocol = window.location.protocol == "https:" ? "wss://" : "ws://";
-    var protocol        = http["protocol"] ? http["protocol"] : defaultProtocol;
-    var host            = http["host"]     ? http["host"]     : location.hostname;
-    var port            = http["port"]     ? http["port"]     : location.port;
-    var path            = http["path"]     ? http["path"]     : "/ws";
-    var url             = protocol + host + ":" + port + path;
-    
-    that.connection = createWebSocket(url);
-    if (that.connection === false) {
-      console.log("Unable to instantiate WebSocket");
-      return;
+ 
+    function createWebSocket(url) {
+        if (window.WebSocket) {
+            return new window.WebSocket(url);
+        } else if (window.MozWebSocket && navigator.userAgent.indexOf("Firefox/6.0") == -1) {
+            return new window.MozWebSocket(url);
+        } else {
+            return null;
+        }
     }
-
-    that.connection.binaryType   = "arraybuffer";
-    that.connection.onopen       = onOpen;
-    that.connection.onmessage    = onMessage;
-    that.connection.ondisconnect = onDisconnect;
-    that.connection.onclose      = onClose;
-
-    heartBeatTimeout = setInterval(onHeartBeat, 20000);
-  }
-  
-  var ucFirst = function(str) {
-    var f = str.charAt(0).toUpperCase();
-    return f + str.substr(1);
-  }
-  
-  var getProtocol = function() {
-    var protocol     = getOption("protocol", "relay");
-    var protocolName = "SmoothieProtocol" + ucFirst(protocol);
-
-    return window[protocolName];
-  }
-
-  this.send = function(data) {
-    if (!active) {
-      return false;
+ 
+    function WebSocketConnection(webSocket, options){
+        var active = null;
+        var heartBeatTimeout = null;
+ 
+        webSocket.binaryType   = "arraybuffer";
+        webSocket.onopen       = onOpen;
+        webSocket.onmessage    = onMessage;
+        webSocket.ondisconnect = onDisconnect;
+        webSocket.onclose      = onClose;
+ 
+        heartBeatTimeout = setInterval(onHeartBeat, options.heartbeatDelay || 20000);
+ 
+        return {
+            send: send
+        };
+ 
+        function send(data){
+            if (!active) {
+                return false;
+            }
+ 
+            if (options["onBeforeSend"]) {
+                data = options["onBeforeSend"](data);
+                if (data === false) {
+                    return false;
+                }
+            }
+ 
+            var protocol = getProtocol();
+            var encoded  = protocol.encode(data);
+ 
+            webSocket.send(encoded);
+        }
+ 
+        function getProtocol() {
+            var protocol     = options.protocol || "relay";
+            return SmoothieProtocols[protocol];
+        }
+ 
+        function callHandler(name, args) {
+            if (options[name]) {
+                options[name].apply(null, args);
+            }
+        }
+ 
+        function onOpen() {
+            console.log("SmoothieWebSocket: opened");
+            active = true;
+            callHandler("onOpen");
+        }
+ 
+        function onHeartBeat() {
+            webSocket.send("ping");
+        }
+ 
+        function onMessage(msg) {
+            if (msg.data != "pong") {
+                var protocol = getProtocol();
+                var decoded  = protocol.decode(msg.data);
+ 
+                callHandler("onMessage", [decoded]);
+            }
+        }
+ 
+        function onDisconnect() {
+            console.log("SmoothieWebSocket: disconnected");
+            active = false;
+            callHandler("onDisconnect");
+        }
+ 
+        function onClose() {
+            console.log("SmoothieWebSocket: closed");
+            clearInterval(heartBeatTimeout);
+            active = false;
+            callHandler("onClose");
+        }
+ 
     }
-
-    if (this.options["onBeforeSend"]) {
-      data = this.options["onBeforeSend"](data);
-      if (data === false) {
-        return false;
-      }
-    }
-    
-    var protocol = getProtocol();
-    var encoded  = protocol.encode(data);
-
-    this.connection.send(encoded);
-  }
-  
-  var callHandler = function(name, args) {
-    if (that.options[name]) {
-      that.options[name].apply(null, args);
-    }
-  }
-  
-  var onOpen = function() {
-    console.log("SmoothieWebSocket: opened");
-    active = true;
-    callHandler("onOpen");
-  }
-  
-  var onHeartBeat = function() {
-//    console.log("SmoothieWebSocket: heartbeat recieved");
-    that.connection.send("ping");
-  }
-  
-  var onMessage = function(msg) {
-//    console.log("SmoothieWebSocket: recieved message", msg);
-    if (msg.data != "pong") {
-      var protocol = getProtocol();
-      var decoded  = protocol.decode(msg.data);
-      
-      callHandler("onMessage", [decoded]);
-    }
-  }
-  
-  var onDisconnect = function() {
-    console.log("SmoothieWebSocket: disconnected");
-    active = false;
-    callHandler("onDisconnect");
-  }
-  
-  var onClose = function() {
-    console.log("SmoothieWebSocket: closed");
-    clearInterval(heartBeatTimeout);
-    active = false;
-    callHandler("onClose");
-  }
-  
-  init(this.options);
-}
-
-var SmoothieProtocolBert = new (function(erl) {
-  var bert = erl;
-
-  this.encode = function(data) {
-    return bert.encode(data);
-  }
-  
-  this.decode = function(data) {
-    return bert.decode(data);
-  }
+ 
 })(Erl);
-
-var SmoothieProtocolRelay = new (function() {
-  this.encode = function(data) {
-    return data;
-  }
-  
-  this.decode = function(data) {
-    return data;
-  }
-})();
