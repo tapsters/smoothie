@@ -1,7 +1,7 @@
 -module(sm).
 -author("Vitaly Shutko").
 
-%% Setting up
+%% Setting Up
 -export([start_http/1]).
 -export([route/2]).
 
@@ -10,21 +10,31 @@
 -export([qs_val/2]).
 -export([qs_vals/1]).
 
+%% Config
+-export([env/2]).
+-export([env/3]).
+-export([env_set/3]).
+-export([env_set/4]).
+-export([env_set/5]).
+
 %% Utils
 -export([prop/2]).
 -export([prop/3]).
 -export([prop_replace/3]).
 
+%% Setting Up
+
 start_http(Opts) ->
-  TransOpts    = prop(ranch, Opts,  [{port, 3000}]),
-  CowboyOpts   = prop(cowboy, Opts, [{nb_acceptors, 100}, 
-                                     {routes, []},
-                                     {protocol, [{env, []}]}]),
-  NbAcceptors  = prop(nb_acceptors, CowboyOpts),
-  Routes       = prop(routes, CowboyOpts),
-  ProtoOpts    = prop(protocol, CowboyOpts),
-  ProtoEnvOpts = prop(env, ProtoOpts),
-  ProtoOpts2   = prop_replace(env, ProtoOpts, prop_replace(dispatch, ProtoEnvOpts, routes(Routes))),
+  TransOpts     = prop(ranch,  Opts, [{port, 3000}]),
+  CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100}, 
+                                      {protocol, [{env, []}]}]),
+  Routes        = prop(routes, Opts, []),
+  
+  NbAcceptors   = prop(nb_acceptors, CowboyOpts),
+  ProtoOpts     = prop(protocol,     CowboyOpts),
+  
+  ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes)),
+  ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
 
   cowboy:start_http(http, NbAcceptors, TransOpts, ProtoOpts2).
 
@@ -39,12 +49,13 @@ route(Pattern, {ws, Handler, Protocol, Timeout}) ->
 
 routes(Routes) ->
   cowboy_router:compile(
-    [{'_', [route("/sm/erlb.js",   {file, "deps/erlb/erlb.js"}),
-            route("/sm/[...]",     {dir, "priv/static"})
-    ]++Routes}]).
+    [{'_', [route("/sm/erlb.js", {file, "deps/erlb/erlb.js"}),
+            route("/sm/[...]",   {priv_dir, smoothie, "static"})]++Routes}]).
 
 to_binary(Value) when is_atom(Value) -> list_to_binary(atom_to_list(Value));
-to_binary(Value) -> Value.
+to_binary(Value)                     -> Value.
+
+%% Request
 
 qs(Req) ->
   {Qs, _} = cowboy_req:qs(Req), Qs.
@@ -54,6 +65,19 @@ qs_val(Name, Req) ->
 
 qs_vals(Req) ->
   {List, _} = cowboy_req:qs_vals(Req), List.
+
+%% Config
+
+env(App, Key)          -> env(App, Key, undefined).
+env(App, Key, Default) ->
+  application:get_env(App, Key, Default).
+
+env_set(App, Key, Value)                      -> env_set(App, Key, Value, 5000, false).
+env_set(App, Key, Value, Timeout)             -> env_set(App, Key, Value, Timeout, false).
+env_set(App, Key, Value, Timeout, Persistent) ->
+  application:set_env(App, Key, Value, [{timeout, Timeout}, {persistent, Persistent}]).
+
+%% Utils
 
 prop(Key, List) -> prop(Key, List, none).
 prop(Key, List, Default) ->

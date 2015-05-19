@@ -68,6 +68,8 @@ websocket_init(_Transport, Req, Opts) ->
       {ok, Req, State#state{handler_state=undefined}, Timeout, hibernate};
     {ok, HandlerState} ->
       {ok, Req, State#state{handler_state=HandlerState}, Timeout, hibernate};
+    shutdown ->
+      {shutdown, Req};
     {shutdown, _HandlerState} ->
       {shutdown, Req}
   end.
@@ -79,16 +81,21 @@ websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
                                                    protocol=Protocol}) ->
   case Protocol:supports_format(Format) of
     true ->
-      DataEncoded = Protocol:decode(Data, Format),
-      case Handler:handle({stream, DataEncoded}, {HandlerState, make_ws_state(Req)}) of
+      {ok, Decoded} = Protocol:decode(Data, Format),
+      case Handler:handle({stream, Decoded}, {HandlerState, make_ws_state(Req)}) of
         ok ->
           {ok, Req, State, hibernate};
         {ok, HandlerState2} ->
           {ok, Req, State#state{handler_state=HandlerState2}, hibernate};
+        {reply, Reply} ->
+          {ok, Encoded} = Protocol:encode(Reply, Format),
+          {reply, {Format, Encoded}, Req, State, hibernate};
         {reply, Reply, HandlerState2} ->
           {ok, Encoded} = Protocol:encode(Reply, Format),
           {reply, {Format, Encoded}, Req, 
            State#state{handler_state=HandlerState2}, hibernate};
+        shutdown ->
+          {shutdown, Req, State};
         {shutdown, HandlerState2} ->
           {shutdown, Req, State#state{handler_state=HandlerState2}}
       end;
@@ -105,6 +112,10 @@ websocket_info(Info, Req, State=#state{handler=Handler, handler_state=HandlerSta
       {ok, Req, State#state{handler_state=HandlerState2}, hibernate};
     {reply, Reply, HandlerState2} ->
       {reply, {text, Reply}, Req, State#state{handler_state=HandlerState2}, hibernate};
+    {reply, Reply} ->
+      {reply, {text, Reply}, Req, State, hibernate};
+    shutdown ->
+      {shutdown, Req, State};
     {shutdown, HandlerState2} ->
       {shutdown, Req, State#state{handler_state=HandlerState2}}
 end.
