@@ -24,6 +24,9 @@
 -export([prop/3]).
 -export([prop_replace/3]).
 
+%% Debug
+-export([stacktrace/0]).
+
 %% Setting Up
 
 start_http(Opts) ->
@@ -93,3 +96,9 @@ prop_replace(Key, List, Value) ->
     false -> [{Key, Value}|List];
     _ -> lists:keyreplace(Key, 1, List, {Key, Value})
   end.
+
+%% Debug
+
+stacktrace() ->
+  Trace = try throw(sm_stacktrace) catch sm_stacktrace -> erlang:get_stacktrace() end,
+  erlang:display(Trace).

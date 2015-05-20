@@ -1,8 +1,10 @@
-# Smoothie
-Cute web framework for Erlang built on top of Cowboy.
+Smoothie
+========
 
-----
-## Installing
+Cute WebSocket framework for Erlang built on top of Cowboy.
+
+Installing
+----------
 
 In rebar.config:
 
@@ -10,8 +12,8 @@ In rebar.config:
 {smoothie,  ".*", {git, "git://github.com/myua/smoothie", {tag, "master"} }}
 ```
 
-----
-## Starting up
+Starting up
+-----------
 
 Starting http server:
 
@@ -39,8 +41,8 @@ More about routing:
 [Constraints](http://ninenines.eu/docs/en/cowboy/HEAD/guide/constraints), 
 [Static files](http://ninenines.eu/docs/en/cowboy/HEAD/guide/static_files).
 
-----
-## Handling WebSockets
+Handling WebSockets
+-------------------
 
 To handle WebSocket connections you should implement sm_websocket behaviour:
 
@@ -90,8 +92,8 @@ Smoothie implements following protocols:
 
 If you want add your own protocol, you should implement sm_protocol behaviour.
 
-----
-## Client-side
+Client-side
+-----------
 
 To use Smoothie in browser include following dependencies:
 
