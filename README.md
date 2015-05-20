@@ -9,7 +9,7 @@ Installing
 In rebar.config:
 
 ```Erlang
-{smoothie,  ".*", {git, "git://github.com/myua/smoothie", {tag, "master"} }}
+{smoothie, ".*", {git, "git://github.com/myua/smoothie", {tag, "master"}}}
 ```
 
 Starting up
@@ -44,7 +44,7 @@ More about routing:
 Handling WebSockets
 -------------------
 
-To handle WebSocket connections you should implement sm_websocket behaviour:
+To handle WebSocket connections you should implement `sm_websocket` behaviour:
 
 ````Erlang
 -module(my_websocket).
@@ -83,14 +83,56 @@ sm:start_http([
 ]).
 ````
 
-In the above example third element of the tuple is data encoding and decondig protocol.
+In the above example third element of the tuple is data encoding/decondig protocol.
 Smoothie implements following protocols:
 * relay - passes data as is
-* bert - uses BIFs to encode and decode data to 
+* bert - uses BIFs to encode/decode data to 
 [BERT](http://bert-rpc.org) which is compatible with Erlang's 
 [ETF](http://erlang.org/doc/apps/erts/erl_ext_dist.html)
 
-If you want add your own protocol, you should implement sm_protocol behaviour.
+If you want add your own protocol, you should implement `sm_protocol` behaviour.
+
+Working with JSON
+-----------------
+
+Smoothie uses [json2](https://github.com/klacke/yaws/blob/master/src/json2.erl) taked
+from [Yaws](https://github.com/klacke/yaws) webserver to encode/decode JSON.
+
+Use `sm:json_enc/1` and `sm:json_dec/1` to encode/decode json to tuple. 
+
+Decode example (encode works in a same way):
+
+````JavaScript
+{
+  first_name: "John",
+  last_name: "Smith",
+  enabled: true,
+  phone_number: 937600131,
+  avatar: {
+    origin: "default.png",
+    thumbnails: [
+      "default_min.png"
+    ]
+  }
+}
+````
+
+Result:
+
+````Erlang
+{struct, [
+  {"first_name", "John"},
+  {"last_name", "Smith"},
+  {"enabled", true},
+  {"phone_number", 937600131},
+  {"avatar", {struct, [
+    {"origin", "default.png"},
+    {"thumbnails", {array, [
+      "default_min.png"
+    ]}}
+  ]}}
+]}
+````
 
 Client-side
 -----------
@@ -115,7 +157,7 @@ var ws = Smoothie.connect({
 ws.send(Erl.tuple(Erl.atom("ok"), "Hello", 123));
 ````
 
-Detailed example of the Smoothie.connect options:
+Detailed example of the `Smoothie.connect` options:
 
 ````JavaScript
 {
@@ -138,10 +180,10 @@ Detailed example of the Smoothie.connect options:
 }
 ````
 
-When you send or receive data from server, it is encoded and decoded by choosen protocol.
+When you send or receive data from server, it is encoded/decoded by choosen protocol.
 Smoothie implements following protocols:
 * relay - passes data as is
-* bert - uses [Erlb.js](https://github.com/saleyn/erlb.js) to encode and decode data to 
+* bert - uses [Erlb.js](https://github.com/saleyn/erlb.js) to encode/decode data to 
 [BERT](http://bert-rpc.org) which is compatible with Erlang's 
 [ETF](http://erlang.org/doc/apps/erts/erl_ext_dist.html)
 

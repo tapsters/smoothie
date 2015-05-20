@@ -7,10 +7,14 @@
 -export([start_http/1]).
 -export([route/2]).
 
-%% Request
+%% WebSocket state
 -export([qs/1]).
 -export([qs_val/2]).
 -export([qs_vals/1]).
+
+%% Formats
+-export([json_enc/1]).
+-export([json_dec/1]).
 
 %% Config
 -export([env/2]).
@@ -60,7 +64,7 @@ routes(Routes) ->
 to_binary(Value) when is_atom(Value) -> list_to_binary(atom_to_list(Value));
 to_binary(Value)                     -> Value.
 
-%% Request
+%% WebSocket state
 
 qs(#sm_websocket_state{req=Req}) ->
   {Qs, _} = cowboy_req:qs(Req), Qs.
@@ -70,6 +74,14 @@ qs_val(Name, #sm_websocket_state{req=Req}) ->
 
 qs_vals(#sm_websocket_state{req=Req}) ->
   {List, _} = cowboy_req:qs_vals(Req), List.
+
+%% Formats
+
+json_enc(Data) -> 
+  yaws_json2:encode(Data).
+
+json_dec(Data) -> 
+  {ok, Document} = yaws_json2:decode_string(Data), Document.
 
 %% Config
 
