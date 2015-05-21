@@ -98,7 +98,7 @@ Working with JSON
 Smoothie uses [json2](https://github.com/klacke/yaws/blob/master/src/json2.erl) taked
 from [Yaws](https://github.com/klacke/yaws) webserver to encode/decode JSON.
 
-Use `sm:json_enc/1` and `sm:json_dec/1` to encode/decode json to tuple. 
+Use `sm:json_enc/1` and `sm:json_dec/1` to encode/decode json. 
 
 Decode example (encode works in a same way):
 

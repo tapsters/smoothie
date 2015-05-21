@@ -3,7 +3,7 @@
 
 -include("sm.hrl").
 
-%% Setting Up
+%% Setting up
 -export([start_http/1]).
 -export([route/2]).
 
@@ -16,22 +16,24 @@
 -export([json_enc/1]).
 -export([json_dec/1]).
 
-%% Config
+%% Utils
 -export([env/2]).
 -export([env/3]).
 -export([env_set/3]).
 -export([env_set/4]).
 -export([env_set/5]).
 
-%% Utils
 -export([prop/2]).
 -export([prop/3]).
 -export([prop_replace/3]).
 
+-export([hex_to_bin/1]).
+-export([bin_to_hex/1]).
+
 %% Debug
 -export([stacktrace/0]).
 
-%% Setting Up
+%% Setting up
 
 start_http(Opts) ->
   TransOpts     = prop(ranch,  Opts, [{port, 3000}]),
@@ -83,7 +85,7 @@ json_enc(Data) ->
 json_dec(Data) -> 
   {ok, Document} = yaws_json2:decode_string(Data), Document.
 
-%% Config
+%% Utils
 
 env(App, Key)          -> env(App, Key, undefined).
 env(App, Key, Default) ->
@@ -93,8 +95,6 @@ env_set(App, Key, Value)                      -> env_set(App, Key, Value, 5000, 
 env_set(App, Key, Value, Timeout)             -> env_set(App, Key, Value, Timeout, false).
 env_set(App, Key, Value, Timeout, Persistent) ->
   application:set_env(App, Key, Value, [{timeout, Timeout}, {persistent, Persistent}]).
-
-%% Utils
 
 prop(Key, List) -> prop(Key, List, none).
 prop(Key, List, Default) ->
@@ -108,6 +108,16 @@ prop_replace(Key, List, Value) ->
     false -> [{Key, Value}|List];
     _ -> lists:keyreplace(Key, 1, List, {Key, Value})
   end.
+
+%%(c) Steve Vinoski
+bin_to_hex(Bin) ->
+  lists:flatten([io_lib:format("~2.16.0B", [X]) || X <- binary_to_list(Bin)]).
+
+hex_to_bin(List)         -> hex_to_bin(List, []).
+hex_to_bin([], Acc)      -> list_to_binary(lists:reverse(Acc));
+hex_to_bin([X,Y|T], Acc) ->
+  {ok, [V], []} = io_lib:fread("~16u", [X,Y]),
+  hex_to_bin(T, [V | Acc]).
 
 %% Debug
 
