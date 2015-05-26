@@ -67,7 +67,7 @@ websocket_init(_Transport, Req, Opts) ->
   {handler, Handler}            = proplists:lookup(handler, Opts),
   {timeout, Timeout}            = proplists:lookup(timeout, Opts),
   {protocol, Protocol}          = proplists:lookup(protocol, Opts),
-  {handler_state, HandlerState} = proplists:lookup(handler_state, Opts),
+  {handler_state, HandlerState} = sm:prop(handler_state, Opts),
   
   State = #state{handler=Handler, protocol=Protocol},
   
