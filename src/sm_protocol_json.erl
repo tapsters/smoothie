@@ -1,4 +1,4 @@
--module(sm_protocol_bert).
+-module(sm_protocol_json).
 -author("Vitaly Shutko").
 -behaviour(sm_protocol).
 
@@ -6,12 +6,12 @@
 
 supports_format(Format) ->
   case Format of 
-    binary -> true;
+    text -> true;
     _ -> false
   end.
 
 encode(Data, binary) ->
-  term_to_binary(Data).
+  yaws_json2:encode(Data).
 
 decode(Data, binary) ->
-  binary_to_term(Data, [safe]).
+  {ok, Document} = yaws_json2:decode_string(Data), Document.

@@ -3,14 +3,12 @@
 -behaviour(cowboy_http_handler).
 -behaviour(cowboy_websocket_handler).
 
--include("sm.hrl").
-
--export([init/3, handle/2, info/3, terminate/3]).
+-export([init/3, handle/2, terminate/3]).
 -export([websocket_init/3, websocket_handle/3, websocket_info/3, websocket_terminate/3]).
 
 -type handler_state() :: any().
--type websocket_state() :: #sm_websocket_state{}.
--type state() :: {handler_state(), websocket_state()}.
+-type cowboy_req() :: tuple().
+-type state() :: {handler_state(), cowboy_req()}.
 -type data() :: any().
 -type message() :: handshake
   | init
@@ -27,13 +25,10 @@
   handler_state
 }).
 
-make_state(Req) ->
-  #sm_websocket_state{req=Req}.
-
 %% HTTP
 
 init(_Transport, Req, Opts) ->
-  Handler = sm:prop(handler, Opts),
+  {handler, Handler} = proplists:lookup(handler, Opts),
   
   case cowboy_req:header(<<"upgrade">>, Req) of
     {undefined, Req2} ->
@@ -41,7 +36,7 @@ init(_Transport, Req, Opts) ->
     {Bin, Req2} when is_binary(Bin) ->
       case cowboy_bstr:to_lower(Bin) of
         <<"websocket">> ->
-          case Handler:handle(handshake, {undefined, make_state(Req)}) of
+          case Handler:handle(handshake, {undefined, Req}) of
             ok -> 
               {upgrade, protocol, cowboy_websocket};
             {ok, HandlerState} -> 
@@ -63,22 +58,20 @@ init(_Transport, Req, Opts) ->
 handle(Req, State) ->
   {ok, Req, State}.
 
-info(_Message, Req, State) ->
-  {ok, Req, State}.
-
 terminate(_Reason, _Req, _State) ->
   ok.
 
 %% WebSocket
 
 websocket_init(_Transport, Req, Opts) ->
-  Handler      = sm:prop(handler, Opts),
-  Timeout      = sm:prop(timeout, Opts, 60000),
-  Protocol     = sm:prop(protocol, Opts),
-  State        = #state{handler=Handler, protocol=Protocol},
-  HandlerState = sm:prop(handler_state, Opts),
+  {handler, Handler}            = proplists:lookup(handler, Opts),
+  {timeout, Timeout}            = proplists:lookup(timeout, Opts),
+  {protocol, Protocol}          = proplists:lookup(protocol, Opts),
+  {handler_state, HandlerState} = proplists:lookup(handler_state, Opts),
   
-  case Handler:handle(init, {HandlerState, make_state(Req)}) of
+  State = #state{handler=Handler, protocol=Protocol},
+  
+  case Handler:handle(init, {HandlerState, Req}) of
     ok ->
       {ok, Req, State#state{handler_state=undefined}, Timeout, hibernate};
     {ok, HandlerState} ->
@@ -96,19 +89,18 @@ websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
                                                    protocol=Protocol}) ->
   case Protocol:supports_format(Format) of
     true ->
-      {ok, Decoded} = Protocol:decode(Data, Format),
-      case Handler:handle({stream, Decoded}, {HandlerState, make_state(Req)}) of
+      Decoded = Protocol:decode(Data, Format),
+      case Handler:handle({stream, Decoded}, {HandlerState, Req}) of
         ok ->
           {ok, Req, State, hibernate};
         {ok, HandlerState2} ->
           {ok, Req, State#state{handler_state=HandlerState2}, hibernate};
         {reply, Reply} ->
-          {ok, Encoded} = Protocol:encode(Reply, Format),
+          Encoded = Protocol:encode(Reply, Format),
           {reply, {Format, Encoded}, Req, State, hibernate};
         {reply, Reply, HandlerState2} ->
-          {ok, Encoded} = Protocol:encode(Reply, Format),
-          {reply, {Format, Encoded}, Req, 
-           State#state{handler_state=HandlerState2}, hibernate};
+          Encoded = Protocol:encode(Reply, Format),
+          {reply, {Format, Encoded}, Req, State#state{handler_state=HandlerState2}, hibernate};
         shutdown ->
           {shutdown, Req, State};
         {shutdown, HandlerState2} ->
@@ -120,7 +112,7 @@ websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
   end.
 
 websocket_info(Info, Req, State=#state{handler=Handler, handler_state=HandlerState}) ->
-  case Handler:handle({info, Info}, {HandlerState, make_state(Req)}) of
+  case Handler:handle({info, Info}, {HandlerState, Req}) of
     ok ->
       {ok, Req, State, hibernate};
     {ok, HandlerState2} ->
@@ -136,5 +128,5 @@ websocket_info(Info, Req, State=#state{handler=Handler, handler_state=HandlerSta
 end.
 
 websocket_terminate(_Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
-  Handler:handle(terminate, {HandlerState, make_state(Req)}),
+  Handler:handle(terminate, {HandlerState, Req}),
   ok.

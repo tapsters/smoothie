@@ -1,7 +1,7 @@
 Smoothie
 ========
 
-Cute WebSocket framework for Erlang built on top of Cowboy.
+Cute web framework for Erlang built on top of Cowboy.
 
 Installing
 ----------
@@ -9,7 +9,7 @@ Installing
 In rebar.config:
 
 ```Erlang
-{smoothie, ".*", {git, "git://github.com/myua/smoothie", {tag, "master"}}}
+{smoothie, ".*", {git, "git://github.com/tapsters/smoothie", {tag, "master"}}}
 ```
 
 Starting up
@@ -25,9 +25,10 @@ sm:start_http([
     {protocol, [{compress, true}]}
   ]},
   {routes, [
-    sm:route("/",         {priv_file, my_app, "static/index.html"}),
-    sm:route("/js/[...]", {priv_dir, "staric/js"}),
-    sm:route("/ws",       {websocket, my_websocket, sm_protocol_bert})
+    {"/",         {priv_file, my_app, "static/index.html"}},
+    {"/js/[...]", {priv_dir, "staric/js"}},
+    {"/user/:id", {request,   my_api,       get_user}},
+    {"/ws",       {websocket, my_websocket, sm_protocol_bert}}
   ]}
 ]).
 ```
@@ -36,10 +37,49 @@ More about configuring Ranch TCP transport and Cowboy protocol:
 [ranch\_tcp](http://ninenines.eu/docs/en/ranch/HEAD/manual/ranch_tcp/), 
 [cowboy\_protocol](http://ninenines.eu/docs/en/cowboy/HEAD/manual/cowboy_protocol/).
 
-More about routing:
+In the above example `request` and `websocket` are special route types provided
+by Smoothie to make handling HTTP requests and WebSockets easier.
+
+More about Cowboy's routing:
 [Routing](http://ninenines.eu/docs/en/cowboy/HEAD/guide/routing), 
 [Constraints](http://ninenines.eu/docs/en/cowboy/HEAD/guide/constraints), 
 [Static files](http://ninenines.eu/docs/en/cowboy/HEAD/guide/static_files).
+
+Handling HTTP requests
+----------------------
+
+To handle HTTP request you should specify route for it:
+
+```Erlang
+sm:start_http([
+  {routes, [
+    {"/user",     {request, my_api, get_all_users}},
+    {"/user/:id", {request, my_api, get_user}},
+    {"/search/[:]"}
+  ]}
+]).
+```
+
+In the above example `my_api` is module name and `get_all_user`/`get_user` are
+function names.
+
+Example code for `my_api` module:
+
+```Erlang
+-module(my_api).
+
+-export([get_all_users/1, get_user/1]).
+
+get_all_users(_Req) ->
+  {ok, 200, [{<<"content-type">>, <<"text/plain">>}], <<"1, 2, 3">>}.
+
+get_user(Req) ->
+  {Id, _} = cowboy_req:binding(id, Req),
+  {ok, 200, [{<<"content-type">>, <<"text/plain">>}], Id}.
+```
+
+More about accessing request's information: 
+[cowboy_req](http://ninenines.eu/docs/en/cowboy/HEAD/manual/cowboy_req/).
 
 Handling WebSockets
 -------------------
@@ -78,7 +118,7 @@ And also you should define route for your handler:
 ````Erlang
 sm:start_http([
   {routes, [
-    sm:route("/ws", {websocket, my_websocket, sm_protocol_bert})
+    {"/ws", {websocket, my_websocket, sm_protocol_bert}}
   ]}
 ]).
 ````
@@ -86,16 +126,17 @@ sm:start_http([
 In the above example third element of the tuple is data encoding/decondig protocol.
 Smoothie implements following protocols:
 * relay - passes data as is
-* bert - uses BIFs to encode/decode data to 
+* bert - uses BIFs to encode/decode data
 [BERT](http://bert-rpc.org) which is compatible with Erlang's 
 [ETF](http://erlang.org/doc/apps/erts/erl_ext_dist.html)
+* json - uses [yaws_json2](https://github.com/tapsters/yaws-json2) to encode/decode data
 
 If you want add your own protocol, you should implement `sm_protocol` behaviour.
 
 Working with JSON
 -----------------
 
-Smoothie uses [json2](https://github.com/klacke/yaws/blob/master/src/json2.erl) taked
+Smoothie uses [yaws_json2](https://github.com/tapsters/yaws-json2) taked
 from [Yaws](https://github.com/klacke/yaws) webserver to encode/decode JSON.
 
 Use `sm:json_enc/1` and `sm:json_dec/1` to encode/decode json. 
@@ -186,5 +227,6 @@ Smoothie implements following protocols:
 * bert - uses [Erlb.js](https://github.com/saleyn/erlb.js) to encode/decode data to 
 [BERT](http://bert-rpc.org) which is compatible with Erlang's 
 [ETF](http://erlang.org/doc/apps/erts/erl_ext_dist.html)
+* json - uses JSON to encode/decode data
 
 

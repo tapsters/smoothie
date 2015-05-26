@@ -8,9 +8,7 @@
   -> boolean().
 
 -callback encode(data(), format())
-  -> {ok, data()}
-  | {error, list()}.
+  -> data().
 
 -callback decode(data(), format())
-  -> {ok, data()}
-  | {error, list()}.
+  -> data().

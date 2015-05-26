@@ -3,7 +3,8 @@
 -behaviour(application).
 -behaviour(supervisor).
 
--export([start/2, stop/1, init/1]).
+-export([start/2, stop/1]).
+-export([init/1]).
 
 start(_,_) ->
   supervisor:start_link({local, sm_sup}, ?MODULE, []).

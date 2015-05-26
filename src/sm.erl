@@ -1,16 +1,8 @@
 -module(sm).
 -author("Vitaly Shutko").
 
--include("sm.hrl").
-
 %% Setting up
 -export([start_http/1]).
--export([route/2]).
-
-%% WebSocket state
--export([qs/1]).
--export([qs_val/2]).
--export([qs_vals/1]).
 
 %% Formats
 -export([json_enc/1]).
@@ -49,33 +41,25 @@ start_http(Opts) ->
 
   cowboy:start_http(http, NbAcceptors, TransOpts, ProtoOpts2).
 
-route(Pattern, {file, Path})            -> {Pattern, cowboy_static, {file, Path}};
-route(Pattern, {dir, Path})             -> {Pattern, cowboy_static, {dir, Path}};
-route(Pattern, {priv_file, App, Path})  -> {Pattern, cowboy_static, {priv_file, App, Path}};
-route(Pattern, {priv_dir, App, Path})   -> {Pattern, cowboy_static, {priv_dir, App, Path}};
-route(Pattern, {websocket, Handler, Protocol}) ->
-  {Pattern, sm_websocket, [{handler, Handler}, {protocol, Protocol}]};
-route(Pattern, {ws, Handler, Protocol, Timeout}) ->
-  {Pattern, sm_websocket, [{handler, Handler}, {protocol, Protocol}, {timeout, Timeout}]}.
+route({Pattern, {file, Path}})                   -> {Pattern, cowboy_static, {file, Path}};
+route({Pattern, {dir, Path}})                    -> {Pattern, cowboy_static, {dir, Path}};
+route({Pattern, {priv_file, App, Path}})         -> {Pattern, cowboy_static, {priv_file, App, Path}};
+route({Pattern, {priv_dir, App, Path}})          -> {Pattern, cowboy_static, {priv_dir, App, Path}};
+route({Pattern, {request, Module, Function}})    -> {Pattern, sm_request,   [{module, Module},
+                                                                             {function, Function}]};
+route({Pattern, {websocket, Handler, Protocol}}) -> {Pattern, sm_websocket, [{handler, Handler}, 
+                                                                             {protocol, Protocol}, 
+                                                                             {timeout, 60000}]};
+route({Pattern, {websocket, Handler, Protocol, Timeout}}) -> {Pattern, sm_websocket, 
+                                                              [{handler, Handler}, 
+                                                               {protocol, Protocol}, 
+                                                               {timeout, Timeout}]}.
 
 routes(Routes) ->
+  Routes1 = [route(Route) || Route <- Routes],
   cowboy_router:compile(
-    [{'_', [route("/sm/erlb.js", {file, "deps/erlb/erlb.js"}),
-            route("/sm/[...]",   {priv_dir, smoothie, "static"})]++Routes}]).
-
-to_binary(Value) when is_atom(Value) -> list_to_binary(atom_to_list(Value));
-to_binary(Value)                     -> Value.
-
-%% WebSocket state
-
-qs(#sm_websocket_state{req=Req}) ->
-  {Qs, _} = cowboy_req:qs(Req), Qs.
-
-qs_val(Name, #sm_websocket_state{req=Req}) ->
-  {Value, _} = cowboy_req:qs_val(to_binary(Name), Req), Value.
-
-qs_vals(#sm_websocket_state{req=Req}) ->
-  {List, _} = cowboy_req:qs_vals(Req), List.
+    [{'_', [route({"/sm/erlb.js", {file, "deps/erlb/erlb.js"}}),
+            route({"/sm/[...]",   {priv_dir, smoothie, "static"}})]++Routes1}]).
 
 %% Formats
 

@@ -4,7 +4,7 @@
 
 -export([supports_format/1, encode/2, decode/2]).
 
-supports_format(_Format) ->true.
+supports_format(_Format) -> true.
 
-encode(Data, _Format) -> {ok, Data}.
-decode(Data, _Format) -> {ok, Data}.
+encode(Data, _Format) -> Data.
+decode(Data, _Format) -> Data.
