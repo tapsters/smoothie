@@ -54,8 +54,7 @@ To handle HTTP request you should specify route for it:
 sm:start_http([
   {routes, [
     {"/user",     {request, my_api, get_all_users}},
-    {"/user/:id", {request, my_api, get_user}},
-    {"/search/[:]"}
+    {"/user/:id", {request, my_api, get_user}}
   ]}
 ]).
 ```
@@ -68,14 +67,28 @@ Example code for `my_api` module:
 ```Erlang
 -module(my_api).
 
+-include_lib("smoothie/include/sm.hrl").
+
 -export([get_all_users/1, get_user/1]).
 
 get_all_users(_Req) ->
-  {ok, 200, [{<<"content-type">>, <<"text/plain">>}], <<"1, 2, 3">>}.
+  Cookie = #sm_cookie{name    = <<"some_cookie">>, 
+                      value   = <<"some_value">>, 
+                      domain  = <<"example.com">>,
+                      path    = <<"/some/path">>,
+                      max_age = 3600},
+
+  {ok, #sm_response{status  = 200, 
+                    headers = [{<<"content-type">>, <<"text/plain">>}], 
+                    body    = <<"1, 2, 3">>,
+                    cookies = [Cookie]}}.
 
 get_user(Req) ->
   {Id, _} = cowboy_req:binding(id, Req),
-  {ok, 200, [{<<"content-type">>, <<"text/plain">>}], Id}.
+
+  {ok, #sm_response{status  = 200, 
+                    headers = [{<<"content-type">>, <<"text/plain">>}], 
+                    body    = Id}}.
 ```
 
 More about accessing request's information: 
