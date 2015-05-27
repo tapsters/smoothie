@@ -38,7 +38,7 @@ init(_Transport, Req, Opts) ->
         <<"websocket">> ->
           case Handler:handle(handshake, {undefined, Req}) of
             ok ->
-              {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, HandlerState}]};
+              {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, {}}]};
             {ok, HandlerState} ->
               {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, HandlerState}]};
             shutdown ->
