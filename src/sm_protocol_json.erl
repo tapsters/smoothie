@@ -5,7 +5,7 @@
 -export([supports_format/1, encode/2, decode/2]).
 
 supports_format(Format) ->
-  case Format of 
+  case Format of
     text -> true;
     _ -> false
   end.

@@ -29,13 +29,13 @@
 
 start_http(Opts) ->
   TransOpts     = prop(ranch,  Opts, [{port, 3000}]),
-  CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100}, 
+  CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100},
                                       {protocol, [{env, []}]}]),
   Routes        = prop(routes, Opts, []),
-  
+
   NbAcceptors   = prop(nb_acceptors, CowboyOpts),
   ProtoOpts     = prop(protocol,     CowboyOpts),
-  
+
   ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes)),
   ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
 
@@ -47,12 +47,12 @@ route({Pattern, {priv_file, App, Path}})         -> {Pattern, cowboy_static, {pr
 route({Pattern, {priv_dir, App, Path}})          -> {Pattern, cowboy_static, {priv_dir, App, Path}};
 route({Pattern, {request, Module, Function}})    -> {Pattern, sm_request,   [{module, Module},
                                                                              {function, Function}]};
-route({Pattern, {websocket, Handler, Protocol}}) -> {Pattern, sm_websocket, [{handler, Handler}, 
-                                                                             {protocol, Protocol}, 
+route({Pattern, {websocket, Handler, Protocol}}) -> {Pattern, sm_websocket, [{handler, Handler},
+                                                                             {protocol, Protocol},
                                                                              {timeout, 60000}]};
-route({Pattern, {websocket, Handler, Protocol, Timeout}}) -> {Pattern, sm_websocket, 
-                                                              [{handler, Handler}, 
-                                                               {protocol, Protocol}, 
+route({Pattern, {websocket, Handler, Protocol, Timeout}}) -> {Pattern, sm_websocket,
+                                                              [{handler, Handler},
+                                                               {protocol, Protocol},
                                                                {timeout, Timeout}]}.
 
 routes(Routes) ->
@@ -63,10 +63,10 @@ routes(Routes) ->
 
 %% Formats
 
-json_enc(Data) -> 
+json_enc(Data) ->
   yaws_json2:encode(Data).
 
-json_dec(Data) -> 
+json_dec(Data) ->
   {ok, Document} = yaws_json2:decode_string(Data), Document.
 
 %% Utils

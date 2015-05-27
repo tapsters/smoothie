@@ -29,7 +29,7 @@
 
 init(_Transport, Req, Opts) ->
   {handler, Handler} = proplists:lookup(handler, Opts),
-  
+
   case cowboy_req:header(<<"upgrade">>, Req) of
     {undefined, Req2} ->
       {shutdown, Req2, undefined};
@@ -37,9 +37,9 @@ init(_Transport, Req, Opts) ->
       case cowboy_bstr:to_lower(Bin) of
         <<"websocket">> ->
           case Handler:handle(handshake, {undefined, Req}) of
-            ok -> 
+            ok ->
               {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, HandlerState}]};
-            {ok, HandlerState} -> 
+            {ok, HandlerState} ->
               {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, HandlerState}]};
             shutdown ->
               {ok, Req3} = cowboy_req:reply(500, [], [], Req2),
@@ -68,9 +68,9 @@ websocket_init(_Transport, Req, Opts) ->
   {timeout, Timeout}            = proplists:lookup(timeout, Opts),
   {protocol, Protocol}          = proplists:lookup(protocol, Opts),
   {handler_state, HandlerState} = proplists:lookup(handler_state, Opts),
-  
+
   State = #state{handler=Handler, protocol=Protocol},
-  
+
   case Handler:handle(init, {HandlerState, Req}) of
     ok ->
       {ok, Req, State#state{handler_state=undefined}, Timeout, hibernate};
@@ -84,8 +84,8 @@ websocket_init(_Transport, Req, Opts) ->
 
 websocket_handle({text, <<"ping">>}, _Req, State) ->
   {reply, {text, <<"pong">>}, State, hibernate};
-websocket_handle({Format, Data}, Req, State=#state{handler=Handler, 
-                                                   handler_state=HandlerState, 
+websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
+                                                   handler_state=HandlerState,
                                                    protocol=Protocol}) ->
   case Protocol:supports_format(Format) of
     true ->
