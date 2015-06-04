@@ -64,7 +64,8 @@ var Smoothie = (function (erl) {
         heartBeatTimeout = setInterval(onHeartBeat, options.heartbeatDelay || 20000);
 
         return {
-            send: send
+            send: send,
+            close: close
         };
 
         function send(data){
@@ -83,6 +84,10 @@ var Smoothie = (function (erl) {
             var encoded  = protocol.encode(data);
 
             webSocket.send(encoded);
+        }
+
+        function close(){
+            webSocket.close();
         }
 
         function getProtocol() {
