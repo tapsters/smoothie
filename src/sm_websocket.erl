@@ -64,9 +64,9 @@ terminate(_Reason, _Req, _State) ->
 %% WebSocket
 
 websocket_init(_Transport, Req, Opts) ->
-  {handler, Handler}            = proplists:lookup(handler, Opts),
-  {timeout, Timeout}            = proplists:lookup(timeout, Opts),
-  {protocol, Protocol}          = proplists:lookup(protocol, Opts),
+  {handler,       Handler}      = proplists:lookup(handler, Opts),
+  {timeout,       Timeout}      = proplists:lookup(timeout, Opts),
+  {protocol,      Protocol}     = proplists:lookup(protocol, Opts),
   {handler_state, HandlerState} = proplists:lookup(handler_state, Opts),
 
   State = #state{handler=Handler, protocol=Protocol},
@@ -74,23 +74,23 @@ websocket_init(_Transport, Req, Opts) ->
   case Handler:handle(init, {HandlerState, Req}) of
     ok ->
       {ok, Req, State#state{handler_state=undefined}, Timeout, hibernate};
-    {ok, HandlerState} ->
-      {ok, Req, State#state{handler_state=HandlerState}, Timeout, hibernate};
+    {ok, HandlerState1} ->
+      {ok, Req, State#state{handler_state=HandlerState1}, Timeout, hibernate};
     shutdown ->
       {shutdown, Req};
     {shutdown, _HandlerState} ->
       {shutdown, Req}
   end.
 
-websocket_handle({text, <<"ping">>}, _Req, State) ->
-  {reply, {text, <<"pong">>}, State, hibernate};
+websocket_handle({text, <<"ping">>}, Req, State) ->
+  {reply, {text, <<"pong">>}, Req, State, hibernate};
 websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
                                                    handler_state=HandlerState,
                                                    protocol=Protocol}) ->
   case Protocol:supports_format(Format) of
     true ->
       Decoded = Protocol:decode(Data, Format),
-      case Handler:handle({stream, Decoded}, {HandlerState, Req}) of
+      case Handler:handle({stream, {Format, Decoded}}, {HandlerState, Req}) of
         ok ->
           {ok, Req, State, hibernate};
         {ok, HandlerState2} ->
@@ -111,16 +111,20 @@ websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
       {ok, Req, State, hibernate}
   end.
 
-websocket_info(Info, Req, State=#state{handler=Handler, handler_state=HandlerState}) ->
+websocket_info(Info, Req, State=#state{handler=Handler, 
+                                       handler_state=HandlerState,
+                                       protocol=Protocol}) ->
   case Handler:handle({info, Info}, {HandlerState, Req}) of
     ok ->
       {ok, Req, State, hibernate};
     {ok, HandlerState2} ->
       {ok, Req, State#state{handler_state=HandlerState2}, hibernate};
-    {reply, Reply, HandlerState2} ->
-      {reply, {text, Reply}, Req, State#state{handler_state=HandlerState2}, hibernate};
-    {reply, Reply} ->
-      {reply, {text, Reply}, Req, State, hibernate};
+    {reply, {Format, Data}} ->
+      Encoded = Protocol:encode(Data, Format),
+      {reply, {Format, Encoded}, Req, State, hibernate};
+    {reply, {Format, Data}, HandlerState2} ->
+      Encoded = Protocol:encode(Data, Format),
+      {reply, {Format, Encoded}, Req, State#state{handler_state=HandlerState2}, hibernate};
     shutdown ->
       {shutdown, Req, State};
     {shutdown, HandlerState2} ->
