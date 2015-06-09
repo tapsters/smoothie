@@ -219,15 +219,17 @@ var Smoothie = (function (Erl) {
             if (chunkSize >= file.size || chunkSize <= 0) chunkSize = file.size;
 
             var sendFilePart = function (start, end, content) {
-                var uintArr = new Uint8Array(content);
-                content = uintArr.buffer;
+                //var uintArr = new Uint8Array(content);
+                //content = uintArr.buffer;
 
-                webSocket.send(protocol.encode({
+                /*webSocket.send(protocol.encode({
                     event: "chunk",
                     start: start,
                     end: end,
                     content: Erl.bufferToArray(content) // TODO check
-                }));
+                }));*/
+
+                webSocket.send(content);
             };
 
             var sendFileDone = function () {
