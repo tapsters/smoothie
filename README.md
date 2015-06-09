@@ -222,6 +222,8 @@ Detailed example of the `Smoothie.connect` options:
     path:         "/ws",
   },
   
+  queryParams:    {token: 987654321},
+  
   heartBeatDelay: 20000,
   protocol:       "relay",
 
