@@ -165,8 +165,9 @@ var Smoothie = (function (Erl) {
 
         function loadFile(file) {
             options["queryParams"] = options["queryParams"] || {};
-            options["queryParams"]["fileName"] = file.name;
-            options["queryParams"]["fileSize"] = file.size;
+            options["queryParams"]["name"] = file.name;
+            options["queryParams"]["size"] = file.size;
+            options["queryParams"]["type"] = file.type;
 
             var webSocket = createWebSocket(getUrl(options));
 
@@ -179,9 +180,8 @@ var Smoothie = (function (Erl) {
             webSocket.binaryType = "arraybuffer";
 
             webSocket.onopen = function () {
-                webSocket.send(protocol.encode({
-                    event: "start"
-                }));
+                processChunk();
+                console.log("Connection start!!!");
             };
 
             webSocket.onmessage = function(event) {
