@@ -26,7 +26,7 @@ sm:start_http([
   ]},
   {routes, [
     {"/",         {priv_file, my_app, "static/index.html"}},
-    {"/js/[...]", {priv_dir, "staric/js"}},
+    {"/js/[...]", {priv_dir, "static/js"}},
     {"/user/:id", {request,   my_api,       get_user}},
     {"/ws",       {websocket, my_websocket, sm_protocol_bert}}
   ]}
