@@ -165,7 +165,7 @@ var Smoothie = (function (Erl) {
       options["queryParams"] = options["queryParams"] || {};
       options["queryParams"]["name"] = file.name;
       options["queryParams"]["size"] = file.size;
-      options["queryParams"]["type"] = file.type;
+      options["queryParams"]["ext"]  = file.name.split(".").pop();
 
       var webSocket = createWebSocket(getUrl(options));
 
