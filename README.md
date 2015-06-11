@@ -115,10 +115,10 @@ handle(init, {_, WebSocketState}) ->
   User = kvs:get(user, Id),
   {ok, #state{user=User}};
 
-handle({stream, <<"get_name">>}, {State=#state{user=User}, _}) ->
+handle({stream, {text, <<"get_name">>}}, {State=#state{user=User}, _}) ->
   {reply, User#user.username, State};
 
-handle({stream, Data}, {State, _}) -> 
+handle({stream, {_Format, Data}}, {State, _}) -> 
   io:format("Got new data: ~p~n", [Data]),
   {ok, State};
 
@@ -131,7 +131,7 @@ And also you should define route for your handler:
 ````Erlang
 sm:start_http([
   {routes, [
-    {"/ws", {websocket, my_websocket, sm_protocol_bert}}
+    {"/ws", {websocket, my_websocket, sm_protocol_relay}}
   ]}
 ]).
 ````
