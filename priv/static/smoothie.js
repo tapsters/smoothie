@@ -233,6 +233,15 @@ var Smoothie = (function (Erl) {
       };
 
       reader.onload = function (event) {
+        if (webSocket.OPEN !== webSocket.readyState) {
+          reader.abort();
+          console.log("WebSocket has been closed.");
+          errorCb && errorCb({
+            message: "WebSocket has been closed."
+          });
+          return;
+        }
+
         var bytesLoaded = Math.min(offset + chunkSize, file.size);
         sendFilePart(offset, bytesLoaded, event.target.result);
         progressCb && progressCb({
@@ -244,15 +253,16 @@ var Smoothie = (function (Erl) {
         if (offset < file.size) {
           //next chunk
           processChunk();
-        }
-        else {
+        } else {
           sendFileDone();
         }
       };
 
       reader.onerror = reader.onabort = function () {
         console.log("FileReader error!!!");
-        webSocket.close();
+        if (webSocket.OPEN === webSocket.readyState) {
+          webSocket.close();
+        }
       }
 
     }
