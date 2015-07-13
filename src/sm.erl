@@ -58,8 +58,7 @@ route({Pattern, {websocket, Handler, Protocol, Timeout}}) -> {Pattern, sm_websoc
 routes(Routes) ->
   Routes1 = [route(Route) || Route <- Routes],
   cowboy_router:compile(
-    [{'_', [route({"/sm/erlb.js", {file, "deps/erlb/erlb.js"}}),
-            route({"/sm/[...]",   {priv_dir, smoothie, "static"}})]++Routes1}]).
+    [{'_', [route({"/sm/[...]",   {priv_dir, smoothie, "static"}})]++Routes1}]).
 
 %% Formats
 
