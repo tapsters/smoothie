@@ -96,9 +96,10 @@ prop_replace(Key, List, Value) ->
 bin_to_hex(Bin) ->
   lists:flatten([io_lib:format("~2.16.0B", [X]) || X <- binary_to_list(Bin)]).
 
-hex_to_bin(List)         -> hex_to_bin(List, []).
-hex_to_bin([], Acc)      -> list_to_binary(lists:reverse(Acc));
-hex_to_bin([X,Y|T], Acc) ->
+hex_to_bin(List) when is_binary(List) -> hex_to_bin(binary_to_list(List), []).
+hex_to_bin(List) when is_list(List)   -> hex_to_bin(List, []).
+hex_to_bin([], Acc)                   -> list_to_binary(lists:reverse(Acc));
+hex_to_bin([X,Y|T], Acc)              ->
   {ok, [V], []} = io_lib:fread("~16u", [X,Y]),
   hex_to_bin(T, [V | Acc]).
 
