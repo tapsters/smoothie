@@ -1,0 +1,13 @@
+{application, file_upload, [
+  {description, "Smoothie Based WebSocket File Upload Example"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+    kernel,
+    stdlib,
+    inets,
+    smoothie
+  ]},
+  {mod, {file_upload, []}},
+  {env, []}
+]}.

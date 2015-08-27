@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>Smoothie WebSocket File Upload</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="/sm/erlb.js"></script>
+    <script type="text/javascript" src="/sm/smoothie.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        $('#file').change(function() {
+          var options = {http: {host: 'localhost', 
+                                port: 5000, 
+                                path: '/upload'}};
+          Smoothie.sendFiles(options, this.files, onComplete);
+        });
+        
+        function onComplete(data) {
+          var link = '<a href="' + data.message + '" target="_blank">' + data.message + '</a>';
+          $('#result').html('File upload complete: ' + link);
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <p>
+      Choose file:<br />
+      <input type="file" id="file" />
+    </p>
+    <p id="result"></p>
+  </body>
+</html>
