@@ -5,7 +5,7 @@ Starting Up
 -----------
 
 ```
-mad compile plan repl
+mad deps compile plan repl
 ```
 
 Usage
