@@ -22,6 +22,8 @@
 -export([hex_to_bin/1]).
 -export([bin_to_hex/1]).
 
+-export([now/0]).
+
 %% Debug
 -export([stacktrace/0]).
 
@@ -91,6 +93,10 @@ prop_replace(Key, List, Value) ->
     false -> [{Key, Value}|List];
     _ -> lists:keyreplace(Key, 1, List, {Key, Value})
   end.
+
+now() ->
+  {Mega, Sec, Micro} = os:timestamp(),
+  (Mega * 1000000 + Sec) * 1000 + round(Micro/1000).
 
 %%(c) Steve Vinoski
 bin_to_hex(Bin) ->
