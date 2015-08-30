@@ -14,8 +14,8 @@
         });
         
         function onComplete(data) {
-          var link = '<a href="' + data.message + '" target="_blank">' + data.message + '</a>';
-          $('#result').html('File upload complete: ' + link);
+          var url = location.href.replace(/\/$/, "") + data.message;
+          $('#result').html('<a href="' + url + '" target="_blank">' + url + '</a>');
         }
       });
     </script>
