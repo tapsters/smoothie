@@ -22,6 +22,8 @@
 -export([hex_to_bin/1]).
 -export([bin_to_hex/1]).
 
+-export([now/0]).
+
 %% Debug
 -export([stacktrace/0]).
 
@@ -92,13 +94,18 @@ prop_replace(Key, List, Value) ->
     _ -> lists:keyreplace(Key, 1, List, {Key, Value})
   end.
 
+now() ->
+  {Mega, Sec, Micro} = os:timestamp(),
+  (Mega * 1000000 + Sec) * 1000 + round(Micro/1000).
+
 %%(c) Steve Vinoski
 bin_to_hex(Bin) ->
   lists:flatten([io_lib:format("~2.16.0B", [X]) || X <- binary_to_list(Bin)]).
 
-hex_to_bin(List)         -> hex_to_bin(List, []).
-hex_to_bin([], Acc)      -> list_to_binary(lists:reverse(Acc));
-hex_to_bin([X,Y|T], Acc) ->
+hex_to_bin(List) when is_binary(List) -> hex_to_bin(binary_to_list(List), []);
+hex_to_bin(List) when is_list(List)   -> hex_to_bin(List, []).
+hex_to_bin([], Acc)                   -> list_to_binary(lists:reverse(Acc));
+hex_to_bin([X,Y|T], Acc)              ->
   {ok, [V], []} = io_lib:fread("~16u", [X,Y]),
   hex_to_bin(T, [V | Acc]).
 

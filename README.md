@@ -102,7 +102,6 @@ To handle WebSocket connections you should implement `sm_websocket` behaviour:
 ````Erlang
 -module(my_websocket).
 -behaviour(sm_websocket).
--include_lib("kvs/include/user.hrl").
 
 -export([handle/2]).
 
@@ -112,7 +111,7 @@ To handle WebSocket connections you should implement `sm_websocket` behaviour:
 
 handle(init, {_, WebSocketState}) ->
   Id = sm:qs_val(id, WebSocketState),
-  User = kvs:get(user, Id),
+  User = ctail:get(user, Id),
   {ok, #state{user=User}};
 
 handle({stream, {text, <<"get_name">>}}, {State=#state{user=User}, _}) ->
@@ -145,6 +144,13 @@ Smoothie implements following protocols:
 * json - uses [yaws_json2](https://github.com/tapsters/yaws-json2) to encode/decode data
 
 If you want add your own protocol, you should implement `sm_protocol` behaviour.
+
+WebSocket File Upload
+---------------------
+
+Smoothie has builtin JavaScript frontend for file uploading through WebSocket.
+
+See example in `examples/file_upload`.
 
 Working with JSON
 -----------------
