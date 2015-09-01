@@ -1,15 +1,25 @@
 -module(sm_request).
 -author("Vitaly Shutko").
--behaviour(cowboy_http_handler).
+-behaviour(cowboy_handler).
 
 -include("sm.hrl").
 
--export([init/3, handle/2, terminate/3]).
+-export([init/2]).
 
--record(state, {options}).
+%% Cowboy Handler Callbacks
 
-init({_Transport, _Protocol}, Req, Opts) ->
-  {ok, Req, #state{options=Opts}}.
+init(Req, Opts) ->
+  {module, Module}     = proplists:lookup(module, Opts),
+  {function, Function} = proplists:lookup(function, Opts),
+
+  case Module:Function(Req) of
+    ok ->
+      {ok, get_response(#sm_response{status=200}, Req), Opts};
+    {ok, Response=#sm_response{}} ->
+      {ok, get_response(Response, Req), Opts}
+  end.
+
+%% Internal
 
 add_cookie_option(OptionName, OptionIndex, Cookie, Options) ->
   case element(OptionIndex, Cookie) of
@@ -34,19 +44,4 @@ set_cookies([Cookie|Cookies], Req) ->
 
 get_response(#sm_response{status=Status, headers=Headers, body=Body, cookies=Cookies}, Req) ->
   Req2 = set_cookies(Cookies, Req),
-  {ok, Req3} = cowboy_req:reply(Status, Headers, Body, Req2),
-  Req3.
-
-handle(Req, State=#state{options=Opts}) ->
-  {module, Module}     = proplists:lookup(module, Opts),
-  {function, Function} = proplists:lookup(function, Opts),
-
-  case Module:Function(Req) of
-    ok ->
-      {ok, get_response(#sm_response{status=200}, Req), State};
-    {ok, Response=#sm_response{}} ->
-      {ok, get_response(Response, Req), State}
-  end.
-
-terminate(_Reason, _Req, _State) ->
-  ok.
+  cowboy_req:reply(Status, Headers, Body, Req2).
