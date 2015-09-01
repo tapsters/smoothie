@@ -1,0 +1,13 @@
+{application, rpc_over_http, [
+  {description, "Smoothie Based RPC Over HTTP Example"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+    kernel,
+    stdlib,
+    inets,
+    smoothie
+  ]},
+  {mod, {rpc_over_http, []}},
+  {env, []}
+]}.

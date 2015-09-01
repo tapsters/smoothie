@@ -84,7 +84,7 @@ get_all_users(_Req) ->
                     cookies = [Cookie]}}.
 
 get_user(Req) ->
-  {Id, _} = cowboy_req:binding(id, Req),
+  Id = cowboy_req:binding(id, Req),
 
   {ok, #sm_response{status  = 200, 
                     headers = [{<<"content-type">>, <<"text/plain">>}], 
