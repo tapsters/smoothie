@@ -14,14 +14,12 @@
                 ext,
                 path}).
 
-handle(handshake, {_, _Req}) ->
-  {ok, #state{size = 0}};
-
-handle(init, {State, Req}) ->
+handle(init, {_, Req}) ->
   {Mega, Sec, Micro} = os:timestamp(),
   Rnd = rnd:string(12, chars_and_numbers),
   Name = Rnd ++ integer_to_list(Mega) ++ integer_to_list(Sec) ++ integer_to_list(Micro),
-  {Ext, _} = cowboy_req:qs_val(<<"ext">>, Req),
+  QS = cowboy_req:parse_qs(Req),
+  Ext = sm:prop(<<"ext">>, QS),
   Path = "/tmp/" ++ Name,
   file:delete(Path),
 
@@ -29,17 +27,17 @@ handle(init, {State, Req}) ->
 
   self() ! message(ready),
 
-  {ok, State#state{file = File,
-                   path = Path,
-                   name = Name,
-                   ext  = binary_to_list(Ext)}};
+  {ok, #state{size = 0,
+              file = File,
+              path = Path,
+              name = Name,
+              ext  = binary_to_list(Ext)}};
 
 handle({stream, Data}, {State, _Req}) ->
   case Data of
     {binary, <<"done">>} ->
       file:close(State#state.file),
       Url = "/uploads/" ++ State#state.name ++ "." ++ State#state.ext,
-      io:format("URL: ~p~n", [Url]),
       file:copy(State#state.path, code:priv_dir(file_upload) ++ Url),
       {reply, term_to_binary(message(complete, Url)), State};
     {binary, Binary} ->
