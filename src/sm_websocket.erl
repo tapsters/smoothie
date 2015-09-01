@@ -22,7 +22,7 @@
   handler_state
 }).
 
-%% HTTP
+%% Cowboy WebSocket Callbacks
 
 init(Req, Opts) ->
   {handler,  Handler}  = proplists:lookup(handler, Opts),
