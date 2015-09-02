@@ -1,7 +1,7 @@
-Smoothie
+smoothie
 ========
 
-Cute web framework for Erlang built on top of Cowboy.
+Cute web framework for Erlang built on top of Cowboy 2.
 
 Installing
 ----------
