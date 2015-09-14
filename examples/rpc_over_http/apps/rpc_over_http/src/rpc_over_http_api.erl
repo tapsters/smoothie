@@ -17,7 +17,7 @@ get_all_users(_Req) ->
                     cookies = [Cookie]}}.
 
 get_user(Req) ->
-  Id = cowboy_req:binding(id, Req),
+  {Id, _} = cowboy_req:binding(id, Req),
   Body = list_to_binary("User id: " ++ binary_to_list(Id)),
 
   {ok, #sm_response{status  = 200, 
