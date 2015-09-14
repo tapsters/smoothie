@@ -1,8 +1,10 @@
 -module(sm_websocket).
 -author("Vitaly Shutko").
--behaviour(cowboy_websocket).
+-behaviour(cowboy_http_handler).
+-behaviour(cowboy_websocket_handler).
 
--export([init/2, websocket_handle/3, websocket_info/3, terminate/3]).
+-export([init/3, handle/2, terminate/3]).
+-export([websocket_init/3, websocket_handle/3, websocket_info/3, websocket_terminate/3]).
 
 -type handler_state() :: any().
 -type cowboy_req() :: tuple().
@@ -14,7 +16,8 @@
   | {info, any()}
   | terminate.
 
--callback handle(message(), state()) -> any().
+-callback handle(message(), state())
+	-> any().
 
 -record(state, {
   handler,
@@ -22,27 +25,62 @@
   handler_state
 }).
 
-%% Cowboy WebSocket Callbacks
+%% HTTP
 
-init(Req, Opts) ->
-  {handler,  Handler}  = proplists:lookup(handler, Opts),
-  {protocol, Protocol} = proplists:lookup(protocol, Opts),
-  {timeout,  Timeout}  = proplists:lookup(timeout, Opts),
-  
-  State = #state{handler=Handler, protocol=Protocol, handler_state={}},
+init(_Transport, Req, Opts) ->
+  {handler, Handler} = proplists:lookup(handler, Opts),
 
-  case Handler:handle(init, {{}, Req}) of
-    ok ->
-      {cowboy_websocket, Req, State, Timeout, hibernate};
-    {ok, HandlerState} ->
-      {cowboy_websocket, Req, State#state{handler_state=HandlerState}, Timeout, hibernate};
-    shutdown ->
-      {ok, cowboy_req:reply(500, Req), State};
-    {shutdown, StatusCode} ->
-      {ok, cowboy_req:reply(StatusCode, Req), State}
+  case cowboy_req:header(<<"upgrade">>, Req) of
+    {undefined, Req2} ->
+      {shutdown, Req2, undefined};
+    {Bin, Req2} when is_binary(Bin) ->
+      case cowboy_bstr:to_lower(Bin) of
+        <<"websocket">> ->
+          case Handler:handle(handshake, {undefined, Req}) of
+            ok ->
+              {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, {}}]};
+            {ok, HandlerState} ->
+              {upgrade, protocol, cowboy_websocket, Req2, Opts++[{handler_state, HandlerState}]};
+            shutdown ->
+              {ok, Req3} = cowboy_req:reply(500, [], [], Req2),
+              {shutdown, Req3, undefined};
+            {shutdown, StatusCode} ->
+              {ok, Req3} = cowboy_req:reply(StatusCode, [], [], Req2),
+              {shutdown, Req3, undefined}
+          end;
+        _ ->
+          {ok, Req3} = cowboy_req:reply(501, [], [], Req2),
+          {shutdown, Req3, undefined}
+      end;
+    {_, Req2} -> {shutdown, Req2, undefined}
   end.
 
+handle(Req, State) ->
+  {ok, Req, State}.
+
+terminate(_Reason, _Req, _State) ->
+  ok.
+
 %% WebSocket
+
+websocket_init(_Transport, Req, Opts) ->
+  {handler,       Handler}      = proplists:lookup(handler, Opts),
+  {timeout,       Timeout}      = proplists:lookup(timeout, Opts),
+  {protocol,      Protocol}     = proplists:lookup(protocol, Opts),
+  {handler_state, HandlerState} = proplists:lookup(handler_state, Opts),
+
+  State = #state{handler=Handler, protocol=Protocol},
+
+  case Handler:handle(init, {HandlerState, Req}) of
+    ok ->
+      {ok, Req, State#state{handler_state=undefined}, Timeout, hibernate};
+    {ok, HandlerState1} ->
+      {ok, Req, State#state{handler_state=HandlerState1}, Timeout, hibernate};
+    shutdown ->
+      {shutdown, Req};
+    {shutdown, _HandlerState} ->
+      {shutdown, Req}
+  end.
 
 websocket_handle({text, <<"ping">>}, Req, State) ->
   {reply, {text, <<"pong">>}, Req, State, hibernate};
@@ -64,9 +102,9 @@ websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
           Encoded = Protocol:encode(Reply, Format),
           {reply, {Format, Encoded}, Req, State#state{handler_state=HandlerState2}, hibernate};
         shutdown ->
-          {stop, Req, State};
+          {shutdown, Req, State};
         {shutdown, HandlerState2} ->
-          {stop, Req, State#state{handler_state=HandlerState2}}
+          {shutdown, Req, State#state{handler_state=HandlerState2}}
       end;
     false ->
       io:format("Protocol ~p doesn't support ~p format~n", [Protocol, Format]),
@@ -88,11 +126,11 @@ websocket_info(Info, Req, State=#state{handler=Handler,
       Encoded = Protocol:encode(Data, Format),
       {reply, {Format, Encoded}, Req, State#state{handler_state=HandlerState2}, hibernate};
     shutdown ->
-      {stop, Req, State};
+      {shutdown, Req, State};
     {shutdown, HandlerState2} ->
-      {stop, Req, State#state{handler_state=HandlerState2}}
+      {shutdown, Req, State#state{handler_state=HandlerState2}}
 end.
 
-terminate(_Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
+websocket_terminate(_Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
   Handler:handle(terminate, {HandlerState, Req}),
   ok.

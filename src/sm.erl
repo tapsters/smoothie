@@ -123,7 +123,7 @@ now() ->
 -spec parse_http_date(Date :: binary() | string()) -> unixtime().
 parse_http_date(Date) when is_list(Date) -> parse_http_date(list_to_binary(Date));
 parse_http_date(Date)                    ->
-  Seconds = calendar:datetime_to_gregorian_seconds(cow_date:parse_date(Date)) - 62167219200,
+  Seconds = calendar:datetime_to_gregorian_seconds(sm_date:parse_date(Date)) - 62167219200,
   Seconds * 1000.
 
 -spec timestamp_to_unixtime(erlang:timestamp()) -> unixtime().
