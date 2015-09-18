@@ -8,8 +8,61 @@
 
 -record(state, {options}).
 
+%% cowboy_http_handler Callbacks
+
 init({_Transport, _Protocol}, Req, Opts) ->
   {ok, Req, #state{options=Opts}}.
+
+handle(Req, State=#state{options=Opts}) ->
+  {module, Module}     = proplists:lookup(module, Opts),
+  {function, Function} = proplists:lookup(function, Opts),
+  
+  case proplists:lookup(protocol, Opts) of
+    {protocol, Protocol} ->
+      Body = get_body(Req),
+      {ContentType, _} = cowboy_req:header(<<"content-type">>, Req),
+      Format = case ContentType of
+                 <<"application/octet-stream">> -> binary;
+                 <<"application/binary">>       -> binary;
+                 _                              -> text
+               end,
+      Headers = [{<<"content-type">>, ContentType}],
+      Decoded = Protocol:decode(Body, Format),
+
+      case Module:Function(Decoded, Req) of
+        ok ->
+          {ok, get_response(#sm_response{status=200}, Req), State};
+        {ok, Reply} ->
+          Encoded = Protocol:encode(Reply, Format),
+          {ok, get_response(#sm_response{status=200, headers=Headers, body=Encoded}, Req), State};
+        {ok, Reply, Response=#sm_response{}} ->
+          Encoded = Protocol:encode(Reply, Format),
+          Headers1 = Headers ++ Response#sm_response.headers,
+          {ok, get_response(Response#sm_response{headers=Headers1, body=Encoded}, Req), State}
+      end;
+    _ ->
+      case Module:Function(Req) of
+        ok ->
+          {ok, get_response(#sm_response{status=200}, Req), State};
+        {ok, Response=#sm_response{}} ->
+          {ok, get_response(Response, Req), State}
+      end
+  end.
+
+terminate(_Reason, _Req, _State) ->
+  ok.
+
+%% Internal
+
+get_body(Req) ->
+  get_body(Req, []).
+get_body(Req, Body) ->
+    case cowboy_req:body(Req) of
+      {ok, Data, Req1} ->
+        Body ++ Data;
+      {more, Data, Req1} ->
+        get_body(Req1, Body ++ Data)
+    end.
 
 add_cookie_option(OptionName, OptionIndex, Cookie, Options) ->
   case element(OptionIndex, Cookie) of
@@ -36,17 +89,3 @@ get_response(#sm_response{status=Status, headers=Headers, body=Body, cookies=Coo
   Req2 = set_cookies(Cookies, Req),
   {ok, Req3} = cowboy_req:reply(Status, Headers, Body, Req2),
   Req3.
-
-handle(Req, State=#state{options=Opts}) ->
-  {module, Module}     = proplists:lookup(module, Opts),
-  {function, Function} = proplists:lookup(function, Opts),
-
-  case Module:Function(Req) of
-    ok ->
-      {ok, get_response(#sm_response{status=200}, Req), State};
-    {ok, Response=#sm_response{}} ->
-      {ok, get_response(Response, Req), State}
-  end.
-
-terminate(_Reason, _Req, _State) ->
-  ok.

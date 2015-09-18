@@ -35,6 +35,7 @@
   {priv_file, App :: atom(), Path :: string()} |
   {priv_dir, App :: atom(), Path :: string()} |
   {request, Module :: atom(), Function :: atom()} |
+  {request, Module :: atom(), Function :: atom(), Protocol :: atom()} |
   {websocket, Handler :: atom(), Protocol :: atom()} |
   {websocket, Handler :: atom(), Protocol :: atom(), Timeout :: integer()}.
 
@@ -56,19 +57,27 @@ start_http(Opts) ->
   cowboy:start_http(http, NbAcceptors, TransOpts, ProtoOpts2).
 
 -spec route({Pattern :: string(), Route :: route()}) -> tuple(). %% cowboy_router:route_rule()
-route({Pattern, {file, Path}})                   -> {Pattern, cowboy_static, {file, Path}};
-route({Pattern, {dir, Path}})                    -> {Pattern, cowboy_static, {dir, Path}};
-route({Pattern, {priv_file, App, Path}})         -> {Pattern, cowboy_static, {priv_file, App, Path}};
-route({Pattern, {priv_dir, App, Path}})          -> {Pattern, cowboy_static, {priv_dir, App, Path}};
-route({Pattern, {request, Module, Function}})    -> {Pattern, sm_request,   [{module, Module},
-                                                                             {function, Function}]};
-route({Pattern, {websocket, Handler, Protocol}}) -> {Pattern, sm_websocket, [{handler, Handler},
-                                                                             {protocol, Protocol},
-                                                                             {timeout, 60000}]};
-route({Pattern, {websocket, Handler, Protocol, Timeout}}) -> {Pattern, sm_websocket,
-                                                              [{handler, Handler},
-                                                               {protocol, Protocol},
-                                                               {timeout, Timeout}]}.
+route({Pattern, {dir, Path}}) ->
+  {Pattern, cowboy_static, {dir, Path}};
+route({Pattern, {priv_file, App, Path}}) ->
+  {Pattern, cowboy_static, {priv_file, App, Path}};
+route({Pattern, {priv_dir, App, Path}}) ->
+  {Pattern, cowboy_static, {priv_dir, App, Path}};
+route({Pattern, {request, Module, Function}}) ->
+  {Pattern, sm_request, [{module, Module},
+                         {function, Function}]};
+route({Pattern, {request, Module, Function, Protocol}}) ->
+  {Pattern, sm_request, [{module, Module},
+                         {function, Function},
+                         {protocol, Protocol}]};
+route({Pattern, {websocket, Handler, Protocol}}) ->
+  {Pattern, sm_websocket, [{handler, Handler},
+                           {protocol, Protocol},
+                           {timeout, 60000}]};
+route({Pattern, {websocket, Handler, Protocol, Timeout}}) ->
+  {Pattern, sm_websocket, [{handler, Handler},
+                           {protocol, Protocol},
+                           {timeout, Timeout}]}.
 
 -spec routes(Routes :: cowboy_router:routes()) -> cowboy_router:dispatch_rules().
 routes(Routes) ->
