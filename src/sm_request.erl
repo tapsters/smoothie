@@ -37,8 +37,12 @@ handle(Req, State=#state{options=Opts}) ->
           {ok, get_response(#sm_response{status=200, headers=Headers, body=Encoded}, Req), State};
         {ok, Reply, Response=#sm_response{}} ->
           Encoded = Protocol:encode(Reply, Format),
-          Headers1 = Headers ++ Response#sm_response.headers,
-          {ok, get_response(Response#sm_response{headers=Headers1, body=Encoded}, Req), State}
+          RespHeaders = Response#sm_response.headers,
+          RespHeaders1 = case proplists:lookup(<<"content-type">>, RespHeaders) of
+                           none -> RespHeaders ++ Headers;
+                           _    -> RespHeaders
+                         end,
+          {ok, get_response(Response#sm_response{headers=RespHeaders1, body=Encoded}, Req), State}
       end;
     _ ->
       case Module:Function(Req) of
