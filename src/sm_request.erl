@@ -17,45 +17,62 @@ handle(Req, State=#state{options=Opts}) ->
   {module, Module}     = proplists:lookup(module, Opts),
   {function, Function} = proplists:lookup(function, Opts),
 
-  case proplists:lookup(protocol, Opts) of
-    {protocol, Protocol} ->
-      Body = get_body(Req),
-      {ContentType, _} = cowboy_req:header(<<"content-type">>, Req),
-      Format = case ContentType of
-                 <<"application/octet-stream">> -> binary;
-                 <<"application/binary">>       -> binary;
-                 _                              -> text
-               end,
-      Headers = [{<<"content-type">>, ContentType}],
-      Decoded = Protocol:decode(Body, Format),
+  EmptyBodyFun = fun (_,_) -> empty end,
 
-      case Protocol:supports_format(Format) of
-        true ->
-          case Module:Function(Decoded, Req) of
-            ok ->
-              {ok, get_response(#sm_response{status=200}, Req), State};
-            {ok, Reply} ->
-              Encoded = Protocol:encode(Reply, Format),
-              {ok, get_response(#sm_response{status=200, headers=Headers, body=Encoded}, Req), State};
-            {ok, Reply, Response=#sm_response{}} ->
-              Encoded = Protocol:encode(Reply, Format),
-              RespHeaders = Response#sm_response.headers,
-              RespHeaders1 = case proplists:lookup(<<"content-type">>, RespHeaders) of
-                               none -> RespHeaders ++ Headers;
-                               _    -> RespHeaders
-                             end,
-              {ok, get_response(Response#sm_response{headers=RespHeaders1, body=Encoded}, Req), State}
-          end;
-        false ->
-          io:format("Protocol ~p doesn't support ~p format~n", [Protocol, Format]),
-          {ok, get_response(#sm_response{status=400}, Req), State}
+  case cowboy_req:method(Req) of
+    {<<"OPTIONS">>, _} ->
+      case Module:Function(cors, Req) of
+        ok ->
+          Headers = [{<<"Access-Control-Allow-Origin">>, <<"*">>},
+                     {<<"Access-Control-Allow-Headers">>, <<"Content-Type">>},
+                     {<<"Access-Control-Allow-Methods">>, <<"GET, POST">>}],
+          {ok, get_response(#sm_response{status=200, headers=Headers, body=EmptyBodyFun}, Req), State};
+        {ok, Response=#sm_response{}} ->
+          {ok, get_response(Response#sm_response{body=EmptyBodyFun}, Req), State}
       end;
     _ ->
-      case Module:Function(Req) of
-        ok ->
-          {ok, get_response(#sm_response{status=200}, Req), State};
-        {ok, Response=#sm_response{}} ->
-          {ok, get_response(Response, Req), State}
+      case proplists:lookup(protocol, Opts) of
+        {protocol, Protocol} ->
+          Body = get_body(Req),
+          {ContentType, _} = cowboy_req:header(<<"content-type">>, Req),
+          Format = case ContentType of
+                     <<"application/octet-stream">> -> binary;
+                     <<"application/binary">>       -> binary;
+                     _                              -> text
+                   end,
+          Headers = [
+            {<<"content-type">>, ContentType}
+          ],
+          Decoded = Protocol:decode(Body, Format),
+
+          case Protocol:supports_format(Format) of
+            true ->
+              case Module:Function(Decoded, Req) of
+                ok ->
+                  {ok, get_response(#sm_response{status=200}, Req), State};
+                {ok, Reply} ->
+                  Encoded = Protocol:encode(Reply, Format),
+                  {ok, get_response(#sm_response{status=200, headers=Headers, body=Encoded}, Req), State};
+                {ok, Reply, Response=#sm_response{}} ->
+                  Encoded = Protocol:encode(Reply, Format),
+                  RespHeaders = Response#sm_response.headers,
+                  RespHeaders1 = case proplists:lookup(<<"content-type">>, RespHeaders) of
+                                   none -> RespHeaders ++ Headers;
+                                   _    -> RespHeaders
+                                 end,
+                  {ok, get_response(Response#sm_response{headers=RespHeaders1, body=Encoded}, Req), State}
+              end;
+            false ->
+              io:format("Protocol ~p doesn't support ~p format~n", [Protocol, Format]),
+              {ok, get_response(#sm_response{status=400}, Req), State}
+          end;
+        _ ->
+          case Module:Function(Req) of
+            ok ->
+              {ok, get_response(#sm_response{status=200}, Req), State};
+            {ok, Response=#sm_response{}} ->
+              {ok, get_response(Response, Req), State}
+          end
       end
   end.
 

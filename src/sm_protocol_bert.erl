@@ -13,5 +13,6 @@ supports_format(Format) ->
 encode(Data, binary) ->
   term_to_binary(Data).
 
+
 decode(Data, binary) ->
   binary_to_term(Data, [safe]).
