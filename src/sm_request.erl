@@ -85,7 +85,7 @@ get_body(Req) ->
   get_body(Req, []).
 get_body(Req, Body) ->
     case cowboy_req:body(Req) of
-      {ok, Data, Req1} ->
+      {ok, Data, _Req1} ->
         Body ++ Data;
       {more, Data, Req1} ->
         get_body(Req1, Body ++ Data)
