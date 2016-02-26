@@ -131,6 +131,6 @@ websocket_info(Info, Req, State=#state{handler=Handler,
       {shutdown, Req, State#state{handler_state=HandlerState2}}
 end.
 
-websocket_terminate(_Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
-  Handler:handle(terminate, {HandlerState, Req}),
+websocket_terminate(Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
+  Handler:handle(terminate, Reason, {HandlerState, Req}),
   ok.
