@@ -111,7 +111,7 @@ websocket_handle({Format, Data}, Req, State=#state{handler=Handler,
       {ok, Req, State, hibernate}
   end.
 
-websocket_info(Info, Req, State=#state{handler=Handler, 
+websocket_info(Info, Req, State=#state{handler=Handler,
                                        handler_state=HandlerState,
                                        protocol=Protocol}) ->
   case Handler:handle({info, Info}, {HandlerState, Req}) of
@@ -132,5 +132,5 @@ websocket_info(Info, Req, State=#state{handler=Handler,
 end.
 
 websocket_terminate(Reason, Req, #state{handler=Handler, handler_state=HandlerState}) ->
-  Handler:handle(terminate, Reason, {HandlerState, Req}),
+  Handler:handle({terminate, Reason}, {HandlerState, Req}),
   ok.
