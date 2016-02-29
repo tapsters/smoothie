@@ -163,9 +163,9 @@ var Smoothie = (function (Erl) {
 
     function loadFile(file) {
       options["queryParams"] = options["queryParams"] || {};
-      options["queryParams"]["name"] = file.name;
-      options["queryParams"]["size"] = file.size;
-      options["queryParams"]["ext"]  = file.name.split(".").pop();
+      options["queryParams"]["name"]      = file.name;
+      options["queryParams"]["size"]      = file.size;
+      options["queryParams"]["extension"] = file.name.split(".").pop();
 
       var webSocket = createWebSocket(getUrl(options));
 
@@ -182,25 +182,18 @@ var Smoothie = (function (Erl) {
 
       webSocket.onmessage = function (event) {
         var message = Erl.decode(event.data);
-        var status = arrayBufferToString(message.status.value);
-        if (message.data) {
-          var data = decodeURIComponent(arrayBufferToString(message.data.value)) || null;
-        }
+        var status = message.value[0].value;
 
         switch (status) {
-          case "ready":
+          case "UploadReady":
             processChunk();
             break;
-          case "complete":
-            completeCb && completeCb({
-              message: data
-            });
+          case "UploadComplete":
+            completeCb && completeCb(message.value[1]);
             webSocket.close();
             break;
-          case "error":
-            errorCb && errorCb({
-              message: data
-            });
+          case "ErrorResp":
+            errorCb && errorCb(message.value[2]);
             webSocket.close();
             break;
         }
@@ -224,7 +217,7 @@ var Smoothie = (function (Erl) {
       };
 
       var sendFileDone = function () {
-        webSocket.send(stringToArrayBuffer("done"));
+        webSocket.send(Erl.encode(Erl.tuple(Erl.atom('UploadDone'))));
       };
 
       var processChunk = function () {
@@ -235,10 +228,7 @@ var Smoothie = (function (Erl) {
       reader.onload = function (event) {
         if (webSocket.OPEN !== webSocket.readyState) {
           reader.abort();
-          console.log("WebSocket has been closed.");
-          errorCb && errorCb({
-            message: "WebSocket has been closed."
-          });
+          console.error("WebSocket has been closed.");
           return;
         }
 
