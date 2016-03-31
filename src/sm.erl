@@ -2,7 +2,7 @@
 -author("Vitaly Shutko").
 
 %% Setting up
--export([start_http/1]).
+-export([start_http/1, start_https/1]).
 
 %% Formats
 -export([json_enc/1]).
@@ -55,6 +55,21 @@ start_http(Opts) ->
   ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
 
   cowboy:start_http(http, NbAcceptors, TransOpts, ProtoOpts2).
+
+-spec start_https(Opts :: [term()]) -> {ok, pid()} | {error, any()}.
+start_https(Opts) ->
+  TransOpts     = prop(ranch,  Opts, [{port, 3000}]),
+  CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100},
+    {protocol, [{env, []}]}]),
+  Routes        = prop(routes, Opts, []),
+
+  NbAcceptors   = prop(nb_acceptors, CowboyOpts),
+  ProtoOpts     = prop(protocol,     CowboyOpts),
+
+  ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes)),
+  ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
+
+  cowboy:start_https(https, NbAcceptors, TransOpts, ProtoOpts2).
 
 -spec route({Pattern :: string(), Route :: route()}) -> tuple(). %% cowboy_router:route_rule()
 route({Pattern, {dir, Path}}) ->
