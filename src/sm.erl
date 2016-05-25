@@ -158,7 +158,7 @@ timestamp_to_unixtime({Mega, Sec, Micro}) ->
 
 -spec bin_to_hex(Value :: binary()) -> binary().
 bin_to_hex(Value) ->
-  lists:flatten([io_lib:format("~2.16.0B", [X]) || X <- binary_to_list(Value)]).
+  lowercase(lists:flatten([io_lib:format("~2.16.0B", [X]) || X <- binary_to_list(Value)])).
 
 -spec hex_to_bin(Bin :: binary() | string()) -> binary().
 hex_to_bin(Value) when is_binary(Value) -> hex_to_bin(binary_to_list(Value), []);
@@ -168,6 +168,12 @@ hex_to_bin([], Acc)      -> list_to_binary(lists:reverse(Acc));
 hex_to_bin([X,Y|T], Acc) ->
   {ok, [V], []} = io_lib:fread("~16u", [X,Y]),
   hex_to_bin(T, [V | Acc]).
+
+%% $A = 65; $Z = 90; $a = 97; $a-$A = 32
+lowercase(S) -> lowercase(S, []).
+lowercase([],    Acc)                                      -> lists:reverse(Acc);
+lowercase([H|T], Acc) when is_integer(H), H >= 65, H =< 90 -> lowercase(T, [H+32|Acc]);
+lowercase([H|T], Acc)                                      -> lowercase(T, [H|Acc]).
 
 %% Debug
 
