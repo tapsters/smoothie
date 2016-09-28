@@ -38,12 +38,18 @@ handle(Req, State=#state{options=Opts}) ->
           Format = case ContentType of
                      <<"application/octet-stream">> -> binary;
                      <<"application/binary">>       -> binary;
+                     <<"application/json">>         -> text;
                      _                              -> text
                    end,
           Headers = [
             {<<"content-type">>, ContentType}
           ],
-          Decoded = Protocol:decode(Body, Format),
+
+          Body1 = case Format of
+                    text -> binary_to_list(Body);
+                    _    -> Body
+                  end,
+          Decoded = Protocol:decode(Body1, Format),
 
           case Protocol:supports_format(Format) of
             true ->
