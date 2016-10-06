@@ -1,5 +1,6 @@
 -module(sm).
 -author("Vitaly Shutko").
+-author("Oleg Zinchenko").
 
 %% Setting up
 -export([start_http/1, start_https/1]).
@@ -42,22 +43,13 @@
 %% Setting up
 
 -spec start_http(Opts :: [term()]) -> {ok, pid()} | {error, any()}.
-start_http(Opts) ->
-  TransOpts     = prop(ranch,  Opts, [{port, 3000}]),
-  CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100},
-                                      {protocol, [{env, []}]}]),
-  Routes        = prop(routes, Opts, []),
-
-  NbAcceptors   = prop(nb_acceptors, CowboyOpts),
-  ProtoOpts     = prop(protocol,     CowboyOpts),
-
-  ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes)),
-  ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
-
-  cowboy:start_http(http, NbAcceptors, TransOpts, ProtoOpts2).
+start_http(Opts) -> start(http, Opts).
 
 -spec start_https(Opts :: [term()]) -> {ok, pid()} | {error, any()}.
-start_https(Opts) ->
+start_https(Opts) -> start(https, Opts).
+
+-spec start(Transport :: http|https, Opts :: [term()]) -> {ok, pid()} | {error, any()}.
+start(Transport, Opts) ->
   TransOpts     = prop(ranch,  Opts, [{port, 3000}]),
   CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100},
     {protocol, [{env, []}]}]),
@@ -69,7 +61,10 @@ start_https(Opts) ->
   ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes)),
   ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
 
-  cowboy:start_https(https, NbAcceptors, TransOpts, ProtoOpts2).
+  case Transport of
+    http  -> cowboy:start_http(NbAcceptors, TransOpts, ProtoOpts2);
+    https -> cowboy:start_https(NbAcceptors, TransOpts, ProtoOpts2)
+  end.
 
 -spec route({Pattern :: string(), Route :: route()}) -> tuple(). %% cowboy_router:route_rule()
 route({Pattern, {dir, Path}}) ->
