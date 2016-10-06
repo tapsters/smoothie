@@ -54,11 +54,12 @@ start(Transport, Opts) ->
   CowboyOpts    = prop(cowboy, Opts, [{nb_acceptors, 100},
     {protocol, [{env, []}]}]),
   Routes        = prop(routes, Opts, []),
+  CowboyRoutes  = prop(cowboy_routes, Opts, []),
 
   NbAcceptors   = prop(nb_acceptors, CowboyOpts),
   ProtoOpts     = prop(protocol,     CowboyOpts),
 
-  ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes)),
+  ProtoEnvOpts  = prop_replace(dispatch, prop(env, ProtoOpts, []), routes(Routes, CowboyRoutes)),
   ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
 
   case Transport of
@@ -92,10 +93,13 @@ route({Pattern, {websocket, Handler, Protocol, Timeout}}) ->
                            {timeout, Timeout}]}.
 
 -spec routes(Routes :: cowboy_router:routes()) -> cowboy_router:dispatch_rules().
-routes(Routes) ->
+routes(Routes, CowboyRoutes) ->
   Routes1 = [route(Route) || Route <- Routes],
-  cowboy_router:compile(
-    [{'_', [route({"/sm/[...]",   {priv_dir, smoothie, "static"}})]++Routes1}]).
+  cowboy_router:compile([{'_',
+    [route({"/sm/[...]",   {priv_dir, smoothie, "static"}})] ++
+    CowboyRoutes ++
+    Routes1
+  }]).
 
 %% Formats
 
