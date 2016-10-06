@@ -63,8 +63,8 @@ start(Transport, Opts) ->
   ProtoOpts2    = prop_replace(env,      ProtoOpts, ProtoEnvOpts),
 
   case Transport of
-    http  -> cowboy:start_http(NbAcceptors, TransOpts, ProtoOpts2);
-    https -> cowboy:start_https(NbAcceptors, TransOpts, ProtoOpts2)
+    http  -> cowboy:start_http(Transport, NbAcceptors, TransOpts, ProtoOpts2);
+    https -> cowboy:start_https(Transport, NbAcceptors, TransOpts, ProtoOpts2)
   end.
 
 -spec route({Pattern :: string(), Route :: route()}) -> tuple(). %% cowboy_router:route_rule()
