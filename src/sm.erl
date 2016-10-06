@@ -29,7 +29,7 @@
 -export([stacktrace/0]).
 
 -type unixtime() :: integer().
--type route() :: 
+-type route() ::
   {file, Path :: string()} |
   {dir, Path :: string()} |
   {priv_file, App :: atom(), Path :: string()} |
