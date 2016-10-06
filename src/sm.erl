@@ -92,7 +92,8 @@ route({Pattern, {websocket, Handler, Protocol, Timeout}}) ->
                            {protocol, Protocol},
                            {timeout, Timeout}]}.
 
--spec routes(Routes :: cowboy_router:routes()) -> cowboy_router:dispatch_rules().
+-spec routes(Routes :: cowboy_router:routes(), CowboyRoutes :: cowboy_router:routes()) ->
+  cowboy_router:dispatch_rules().
 routes(Routes, CowboyRoutes) ->
   Routes1 = [route(Route) || Route <- Routes],
   cowboy_router:compile([{'_',
