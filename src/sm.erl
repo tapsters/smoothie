@@ -74,6 +74,8 @@ route({Pattern, {priv_file, App, Path}}) ->
   {Pattern, cowboy_static, {priv_file, App, Path}};
 route({Pattern, {priv_dir, App, Path}}) ->
   {Pattern, cowboy_static, {priv_dir, App, Path}};
+route({Pattern, {priv_dir, App, Path, Options}}) ->
+  {Pattern, cowboy_static, {priv_dir, App, Path, Options}};
 route({Pattern, {rest, Module}})
   -> {Pattern, Module, []};
 route({Pattern, {request, Module, Function}}) ->
